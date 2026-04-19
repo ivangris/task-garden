@@ -1,0 +1,2 @@
+"""Garden domain placeholder package."""
+
