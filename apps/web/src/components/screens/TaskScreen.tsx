@@ -1,11 +1,13 @@
 import { formatDate, toApiDate, toDateInputValue, type TaskFilters } from "../../features/tasks/task-utils";
-import type { Project, Task, TaskStatus } from "../../lib/types";
+import type { CurrentRecommendations, Project, Task, TaskStatus, WeeklyPreview } from "../../lib/types";
 
 type TaskScreenProps = {
   title: string;
   subtitle: string;
   tasks: Task[];
   projects: Project[];
+  recommendations: CurrentRecommendations | null;
+  weeklyPreview: WeeklyPreview | null;
   filters: TaskFilters;
   onFiltersChange: (filters: TaskFilters) => void;
   onStatusChange: (taskId: string, status: TaskStatus) => Promise<void>;
@@ -22,6 +24,8 @@ export function TaskScreen({
   subtitle,
   tasks,
   projects,
+  recommendations,
+  weeklyPreview,
   filters,
   onFiltersChange,
   onStatusChange,
@@ -41,6 +45,61 @@ export function TaskScreen({
           <span className="stat-pill">{tasks.length} visible</span>
         </div>
       </div>
+
+      {recommendations && recommendations.items.length > 0 ? (
+        <section className="planning-strip">
+          {weeklyPreview ? (
+            <article className="surface-panel planning-card planning-card--wide">
+              <div className="surface-panel__header">
+                <div>
+                  <p className="section-eyebrow">Weekly Preview</p>
+                  <h4>Top focus for the next seven days</h4>
+                </div>
+                <span className="meta-chip">{weeklyPreview.top_focus_items.length} focus items</span>
+              </div>
+
+              <div className="planning-focus-list">
+                {weeklyPreview.top_focus_items.map((task) => (
+                  <div key={task.id} className="planning-focus-item">
+                    <strong>{task.title}</strong>
+                    <span>
+                      {task.project_name ?? "No project"} · due {formatDate(task.due_date)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {weeklyPreview.suggestion_summaries.length > 0 ? (
+                <div className="chip-row">
+                  {weeklyPreview.suggestion_summaries.map((summary) => (
+                    <span key={summary} className="meta-chip">
+                      {summary}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </article>
+          ) : null}
+
+          {recommendations.items.slice(0, weeklyPreview ? 2 : 3).map((item) => (
+            <article key={item.id} className={`surface-panel planning-card planning-card--${item.level}`}>
+              <div className="planning-card__meta">
+                <span className="section-eyebrow">{item.rule_type.replace(/_/g, " ")}</span>
+                <span className="meta-chip">{item.level}</span>
+              </div>
+              <h4>{item.title}</h4>
+              <p className="muted-copy">{item.rationale}</p>
+              <div className="chip-row">
+                {item.reasons.map((reason) => (
+                  <span key={`${item.id}-${reason.label}`} className="meta-chip">
+                    {reason.label}: {reason.value}
+                  </span>
+                ))}
+              </div>
+            </article>
+          ))}
+        </section>
+      ) : null}
 
       <section className="surface-panel">
         <div className="surface-panel__header surface-panel__header--stack">
@@ -159,4 +218,3 @@ export function TaskScreen({
     </section>
   );
 }
-

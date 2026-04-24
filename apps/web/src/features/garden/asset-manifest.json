@@ -1,0 +1,117 @@
+{
+  "terrain": {
+    "desert": {
+      "label": "Dry ground",
+      "accentClass": "garden-tile--desert",
+      "asset": {
+        "src": "/assets/vendor/kenney/sketch-desert/dirt-center-s.png",
+        "width": 156,
+        "height": 214,
+        "offsetX": 0,
+        "offsetY": -92
+      }
+    },
+    "recovering": {
+      "label": "Recovering soil",
+      "accentClass": "garden-tile--recovering",
+      "asset": {
+        "src": "/assets/vendor/kenney/isometric-landscape/landscape-028.png",
+        "width": 126,
+        "height": 94,
+        "offsetX": 0,
+        "offsetY": -10
+      }
+    },
+    "healthy": {
+      "label": "Healthy growth",
+      "accentClass": "garden-tile--healthy",
+      "asset": {
+        "src": "/assets/vendor/kenney/isometric-landscape/landscape-010.png",
+        "width": 126,
+        "height": 79,
+        "offsetX": 0,
+        "offsetY": -5
+      }
+    },
+    "lush": {
+      "label": "Lush growth",
+      "accentClass": "garden-tile--lush",
+      "asset": {
+        "src": "/assets/vendor/kenney/isometric-landscape/landscape-015.png",
+        "width": 126,
+        "height": 95,
+        "offsetX": 0,
+        "offsetY": -16
+      }
+    }
+  },
+  "plants": {
+    "desert_sprout": {
+      "label": "Desert sprout",
+      "icon": "sprout",
+      "className": "garden-plant--sprout",
+      "asset": {
+        "src": "/assets/vendor/kenney/sketch-desert/tree-s.png",
+        "width": 98,
+        "height": 136,
+        "offsetX": 0,
+        "offsetY": -28
+      }
+    },
+    "sage_clump": {
+      "label": "Sage clump",
+      "icon": "clump",
+      "className": "garden-plant--sage",
+      "asset": {
+        "src": "/assets/vendor/kenney/sketch-town/tree-single-s.png",
+        "width": 112,
+        "height": 154,
+        "offsetX": 0,
+        "offsetY": -38
+      }
+    },
+    "rare_bloom": {
+      "label": "Rare bloom",
+      "icon": "bloom",
+      "className": "garden-plant--bloom",
+      "asset": {
+        "src": "/assets/vendor/kenney/sketch-town-expansion/tree-pine-large-s.png",
+        "width": 118,
+        "height": 162,
+        "offsetX": 0,
+        "offsetY": -42
+      }
+    }
+  },
+  "decorations": {
+    "moss_path": {
+      "label": "Moss path",
+      "icon": "path",
+      "className": "garden-decoration--path",
+      "asset": {
+        "src": "/assets/vendor/kenney/sketch-town/grass-path-s.png",
+        "width": 124,
+        "height": 170,
+        "offsetX": 0,
+        "offsetY": -86
+      }
+    },
+    "fountain_core": {
+      "label": "Fountain core",
+      "icon": "fountain",
+      "className": "garden-decoration--fountain",
+      "asset": {
+        "src": "/assets/vendor/kenney/isometric-landscape/landscape-085.png",
+        "width": 118,
+        "height": 88,
+        "offsetX": 0,
+        "offsetY": -10
+      }
+    },
+    "sun_arch": {
+      "label": "Sun arch",
+      "icon": "arch",
+      "className": "garden-decoration--arch"
+    }
+  }
+}

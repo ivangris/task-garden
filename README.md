@@ -89,6 +89,61 @@ cd apps/api
 alembic upgrade head
 ```
 
+### Local dictation setup
+
+The default Phase 2 transcription path stays fully local and testable with the built-in deterministic STT stub.
+
+If you want to try `whisper.cpp` on Windows, configure these environment variables before starting the API:
+
+```bash
+TASK_GARDEN_STT_PROVIDER=whisper_cpp
+TASK_GARDEN_STT_EXECUTABLE_PATH=C:\\path\\to\\whisper-cli.exe
+TASK_GARDEN_STT_MODEL_PATH=C:\\path\\to\\ggml-base.en.bin
+TASK_GARDEN_AUDIO_STORAGE_DIR=../../data/audio
+```
+
+If `whisper.cpp` is selected but the executable or model path is missing, Task Garden reports transcription as not configured. The deterministic STT stub remains available only when explicitly selected for testing.
+
+### Local Ollama extraction setup
+
+Phase 3A adds an explicit local extraction provider choice between `mock` and `ollama`.
+
+To use Ollama locally:
+
+```bash
+TASK_GARDEN_TASK_EXTRACTION_PROVIDER=ollama
+TASK_GARDEN_OLLAMA_BASE_URL=http://127.0.0.1:11434
+TASK_GARDEN_EXTRACTION_MODEL=llama3.1:8b
+TASK_GARDEN_EXTRACTION_TIMEOUT_SECONDS=60
+```
+
+Make sure Ollama is running and the selected model has been pulled locally. If Ollama fails or returns malformed structured output, Task Garden preserves the raw entry and shows an extraction error instead of silently falling back to the mock extractor.
+
+### Optional local recap narratives
+
+Phase 7B keeps recap metrics deterministic and adds an explicit optional narrative layer on top.
+
+To use a local Ollama recap narrative provider:
+
+```bash
+TASK_GARDEN_RECAP_NARRATIVE_PROVIDER=ollama
+TASK_GARDEN_RECAP_MODEL=llama3.1:8b
+TASK_GARDEN_OLLAMA_BASE_URL=http://127.0.0.1:11434
+```
+
+You can also leave recap narratives `off` or use the deterministic `mock` provider for testing. If Ollama fails, recap cards and metrics still work, and the app records the narrative failure state instead of silently falling back.
+
+### Extraction evaluation harness
+
+You can compare local extraction targets against the sample corpus:
+
+```bash
+cd apps/api
+.venv\Scripts\python scripts\eval_extraction_samples.py --target mock --target ollama:llama3.1:8b --target ollama:qwen2.5:7b
+```
+
+Add `--json` if you want machine-readable output.
+
 ## Repository hygiene
 
 - Keep only `.env.example` in version control

@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 
 from app.domain.entities import RawEntry
 from app.repositories.interfaces import ActivityEventRepository, RawEntryRepository
-from app.schemas.entries import CreateEntryRequest
+from app.schemas.entries import CreateAudioEntryRequest, CreateEntryRequest
 from app.services.activity import log_activity
 from app.services.common import generate_id, utcnow
 
@@ -34,9 +34,54 @@ def create_raw_entry(
     return created
 
 
+def create_audio_entry_shell(
+    payload: CreateAudioEntryRequest,
+    raw_entries: RawEntryRepository,
+    activity_events: ActivityEventRepository,
+) -> RawEntry:
+    now = utcnow()
+    entry = RawEntry(
+        id=generate_id(),
+        source_type="audio_transcript",
+        raw_text="",
+        entry_status="new",
+        created_at=now,
+        updated_at=now,
+        device_id=payload.device_id,
+    )
+    created = raw_entries.add(entry)
+    log_activity(
+        activity_events,
+        event_type="raw_entry_created",
+        entity_type="raw_entry",
+        entity_id=created.id,
+        metadata={"source_type": created.source_type, "audio_shell": True},
+        device_id=created.device_id,
+    )
+    return created
+
+
 def get_raw_entry(entry_id: str, raw_entries: RawEntryRepository) -> RawEntry:
     entry = raw_entries.get(entry_id)
     if entry is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Raw entry not found.")
     return entry
 
+
+def archive_raw_entry(
+    entry_id: str,
+    raw_entries: RawEntryRepository,
+    activity_events: ActivityEventRepository,
+) -> RawEntry:
+    entry = raw_entries.archive(entry_id)
+    if entry is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Raw entry not found.")
+    log_activity(
+        activity_events,
+        event_type="raw_entry_archived",
+        entity_type="raw_entry",
+        entity_id=entry.id,
+        metadata={"source_type": entry.source_type},
+        device_id=entry.device_id,
+    )
+    return entry

@@ -1,18 +1,17 @@
 # Garden Asset Plan
 
-## Phase 0 status
+## Current status
 
-Garden rendering is intentionally deferred.
+The first real garden art pass now uses a curated subset of Kenney CC0 packs through the frontend asset manifest.
 
-This placeholder exists so later phases can define:
-- asset directory conventions
-- replacement-friendly sprite organization
-- tile and decoration naming
-- export requirements
-- placeholder-to-final asset swap rules
+Current conventions:
+- vendor assets live under `apps/web/public/assets/vendor/kenney/`
+- semantic state-to-file mapping stays in `apps/web/src/features/garden/asset-manifest.json`
+- the DOM/CSS garden renderer consumes manifest data and remains replaceable
 
-## Near-term guidance
+## Ongoing guidance
 
 - keep art assets replaceable
 - keep garden rendering isolated from task persistence
-- avoid committing to a rendering engine in Phase 0
+- avoid hardcoding concrete asset paths in renderer components
+- prefer terrain, greenery, water, rock, and natural props over settlement visuals

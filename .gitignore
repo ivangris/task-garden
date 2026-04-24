@@ -38,6 +38,12 @@ data/sqlite/*.db-wal
 data/sqlite/*.sqlite-shm
 data/sqlite/*.sqlite-wal
 runtime-logs/
+.tmp-art-preview/
+kenney_*.zip
+tools/whisper.cpp/
+data/models/
+data/audio/samples/
+data/audio/*.txt
 *.wav
 *.mp3
 *.m4a

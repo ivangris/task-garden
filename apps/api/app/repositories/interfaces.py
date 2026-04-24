@@ -1,6 +1,35 @@
+from datetime import datetime
 from typing import Protocol
 
-from app.domain.entities import ActivityEvent, ExtractionBatch, Project, RawEntry, Task
+from app.domain.entities import (
+    ActivityEvent,
+    DecayEvent,
+    DecorationInstance,
+    ExtractedTaskCandidate,
+    ExtractionBatch,
+    GardenState,
+    GardenTile,
+    GardenZone,
+    PlantInstance,
+    Project,
+    ProjectSummary,
+    RawEntry,
+    RecapMetricSnapshot,
+    RecapNarrative,
+    RecapPeriod,
+    RecommendationSnapshot,
+    RecoveryEvent,
+    HighlightCard,
+    Milestone,
+    StreakSummary,
+    Task,
+    TranscriptSegment,
+    UnlockLedgerEntry,
+    XPLedgerEntry,
+    ChangeEvent,
+    Device,
+    SyncCursor,
+)
 
 
 class RawEntryRepository(Protocol):
@@ -10,11 +39,33 @@ class RawEntryRepository(Protocol):
 
     def list_all(self) -> list[RawEntry]: ...
 
+    def update(self, entry: RawEntry) -> RawEntry: ...
+
+    def archive(self, entry_id: str) -> RawEntry | None: ...
+
+
+class TranscriptSegmentRepository(Protocol):
+    def list_for_entry(self, raw_entry_id: str) -> list[TranscriptSegment]: ...
+
+    def replace_for_entry(self, raw_entry_id: str, segments: list[TranscriptSegment]) -> list[TranscriptSegment]: ...
+
 
 class ExtractionBatchRepository(Protocol):
     def add(self, batch: ExtractionBatch) -> ExtractionBatch: ...
 
     def list_for_entry(self, raw_entry_id: str) -> list[ExtractionBatch]: ...
+
+    def get(self, extraction_batch_id: str) -> ExtractionBatch | None: ...
+
+    def update(self, batch: ExtractionBatch) -> ExtractionBatch: ...
+
+
+class ExtractedTaskCandidateRepository(Protocol):
+    def add_many(self, candidates: list[ExtractedTaskCandidate]) -> list[ExtractedTaskCandidate]: ...
+
+    def list_for_extraction(self, extraction_batch_id: str) -> list[ExtractedTaskCandidate]: ...
+
+    def update_many(self, candidates: list[ExtractedTaskCandidate]) -> list[ExtractedTaskCandidate]: ...
 
 
 class TaskRepository(Protocol):
@@ -36,14 +87,146 @@ class ProjectRepository(Protocol):
 
     def get(self, project_id: str) -> Project | None: ...
 
+    def update(self, project: Project) -> Project: ...
+
 
 class ActivityEventRepository(Protocol):
     def add(self, event: ActivityEvent) -> ActivityEvent: ...
 
     def list_recent(self, limit: int = 50) -> list[ActivityEvent]: ...
 
+    def list_all(self) -> list[ActivityEvent]: ...
+
+
+class RecommendationSnapshotRepository(Protocol):
+    def add(self, snapshot: RecommendationSnapshot) -> RecommendationSnapshot: ...
+
+    def list_recent(self, snapshot_kind: str | None = None, limit: int = 20) -> list[RecommendationSnapshot]: ...
+
+
+class GardenStateRepository(Protocol):
+    def get_current(self) -> GardenState | None: ...
+
+    def replace(self, state: GardenState) -> GardenState: ...
+
+
+class GardenZoneRepository(Protocol):
+    def list_all(self) -> list[GardenZone]: ...
+
+    def replace_all(self, zones: list[GardenZone]) -> list[GardenZone]: ...
+
+
+class GardenTileRepository(Protocol):
+    def list_all(self) -> list[GardenTile]: ...
+
+    def replace_all(self, tiles: list[GardenTile]) -> list[GardenTile]: ...
+
+
+class PlantInstanceRepository(Protocol):
+    def list_all(self) -> list[PlantInstance]: ...
+
+    def replace_all(self, items: list[PlantInstance]) -> list[PlantInstance]: ...
+
+
+class DecorationInstanceRepository(Protocol):
+    def list_all(self) -> list[DecorationInstance]: ...
+
+    def replace_all(self, items: list[DecorationInstance]) -> list[DecorationInstance]: ...
+
+
+class XPLedgerRepository(Protocol):
+    def list_all(self) -> list[XPLedgerEntry]: ...
+
+    def replace_all(self, entries: list[XPLedgerEntry]) -> list[XPLedgerEntry]: ...
+
+
+class UnlockLedgerRepository(Protocol):
+    def list_all(self) -> list[UnlockLedgerEntry]: ...
+
+    def replace_all(self, entries: list[UnlockLedgerEntry]) -> list[UnlockLedgerEntry]: ...
+
+
+class DecayEventRepository(Protocol):
+    def list_all(self) -> list[DecayEvent]: ...
+
+    def replace_all(self, entries: list[DecayEvent]) -> list[DecayEvent]: ...
+
+
+class RecoveryEventRepository(Protocol):
+    def list_all(self) -> list[RecoveryEvent]: ...
+
+    def replace_all(self, entries: list[RecoveryEvent]) -> list[RecoveryEvent]: ...
+
+
+class RecapPeriodRepository(Protocol):
+    def upsert(self, period: RecapPeriod) -> RecapPeriod: ...
+
+    def get(self, period_id: str) -> RecapPeriod | None: ...
+
+    def get_for_window(self, period_type: str, window_start: datetime, window_end: datetime) -> RecapPeriod | None: ...
+
+
+class RecapMetricSnapshotRepository(Protocol):
+    def list_for_period(self, period_id: str) -> list[RecapMetricSnapshot]: ...
+
+    def replace_for_period(self, period_id: str, items: list[RecapMetricSnapshot]) -> list[RecapMetricSnapshot]: ...
+
+
+class HighlightCardRepository(Protocol):
+    def list_for_period(self, period_id: str) -> list[HighlightCard]: ...
+
+    def replace_for_period(self, period_id: str, items: list[HighlightCard]) -> list[HighlightCard]: ...
+
+
+class MilestoneRepository(Protocol):
+    def list_for_period(self, period_id: str) -> list[Milestone]: ...
+
+    def replace_for_period(self, period_id: str, items: list[Milestone]) -> list[Milestone]: ...
+
+
+class StreakSummaryRepository(Protocol):
+    def get_for_period(self, period_id: str) -> StreakSummary | None: ...
+
+    def replace_for_period(self, period_id: str, item: StreakSummary) -> StreakSummary: ...
+
+
+class ProjectSummaryRepository(Protocol):
+    def list_for_period(self, period_id: str) -> list[ProjectSummary]: ...
+
+    def replace_for_period(self, period_id: str, items: list[ProjectSummary]) -> list[ProjectSummary]: ...
+
+
+class RecapNarrativeRepository(Protocol):
+    def get_for_period(self, period_id: str) -> RecapNarrative | None: ...
+
+    def upsert_for_period(self, narrative: RecapNarrative) -> RecapNarrative: ...
+
 
 class SettingsRepository(Protocol):
     def get_local_settings(self) -> dict[str, str | bool | None]: ...
 
     def save_local_settings(self, values: dict[str, str | bool | None]) -> dict[str, str | bool | None]: ...
+
+
+class DeviceRepository(Protocol):
+    def get(self, device_id: str) -> Device | None: ...
+
+    def list_all(self) -> list[Device]: ...
+
+    def upsert(self, device: Device) -> Device: ...
+
+
+class ChangeEventRepository(Protocol):
+    def add(self, event: ChangeEvent) -> ChangeEvent: ...
+
+    def get_by_event_id(self, event_id: str) -> ChangeEvent | None: ...
+
+    def list_after(self, sequence: int, limit: int = 100) -> list[ChangeEvent]: ...
+
+    def latest_sequence(self) -> int: ...
+
+
+class SyncCursorRepository(Protocol):
+    def get_for_device(self, device_id: str, stream_key: str) -> SyncCursor | None: ...
+
+    def upsert(self, cursor: SyncCursor) -> SyncCursor: ...

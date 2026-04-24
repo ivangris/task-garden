@@ -9,6 +9,7 @@
     "dev:web": "npm run dev --workspace @task-garden/web",
     "dev:web:host": "npm run dev --workspace @task-garden/web -- --host 127.0.0.1 --port 5173",
     "build:web": "npm run build --workspace @task-garden/web",
-    "typecheck:web": "npm run typecheck --workspace @task-garden/web"
+    "typecheck:web": "npm run typecheck --workspace @task-garden/web",
+    "check:garden-assets": "npm run check:garden-assets --workspace @task-garden/web"
   }
 }

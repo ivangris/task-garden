@@ -45,12 +45,22 @@ class ExtractionResult:
     needs_review: bool = True
     open_questions: list[str] = field(default_factory=list)
     candidates: list[ExtractedTaskCandidateResult] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
 class SyncResult:
     status: str
     message: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class RecapNarrativeResult:
+    narrative_text: str
+    provider_name: str
+    model_name: str
+    prompt_version: str
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
@@ -80,6 +90,16 @@ class TaskExtractionProvider(Protocol):
     ) -> ExtractionResult: ...
 
 
+class RecapNarrativeProvider(Protocol):
+    name: str
+
+    def generate_narrative(
+        self,
+        summary: dict[str, Any],
+        prompt_version: str,
+    ) -> RecapNarrativeResult: ...
+
+
 class SyncProvider(Protocol):
     name: str
 
@@ -90,4 +110,3 @@ class AuthProvider(Protocol):
     name: str
 
     def get_session(self) -> AuthSession: ...
-

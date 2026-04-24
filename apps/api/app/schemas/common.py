@@ -17,4 +17,3 @@ class TimestampedResponse(BaseModel):
 
     created_at: datetime
     updated_at: datetime | None = None
-

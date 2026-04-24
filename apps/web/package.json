@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:garden-assets": "node ./scripts/check-garden-assets.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -21,4 +22,3 @@
     "vite": "^6.0.1"
   }
 }
-

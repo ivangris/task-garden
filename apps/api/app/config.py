@@ -7,6 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parents[3]
 DEFAULT_SQLITE_URL = f"sqlite:///{(BASE_DIR / 'data' / 'sqlite' / 'task-garden.db').as_posix()}"
+DEFAULT_AUDIO_DIR = str((BASE_DIR / "data" / "audio").resolve())
 
 
 class ProviderSettings(BaseModel):
@@ -27,16 +28,24 @@ class Settings(BaseSettings):
     database_url: str = Field(default=DEFAULT_SQLITE_URL)
     local_only_mode: bool = True
     cloud_enabled: bool = False
+    auto_configure_local_defaults: bool = True
 
-    stt_provider: str = "local_stub"
-    task_extraction_provider: str = "local_stub"
+    stt_provider: str = "whisper_cpp"
+    task_extraction_provider: str = "ollama"
+    recap_narrative_provider: str = "ollama"
     sync_provider: str = "local_only"
     auth_provider: str = "none"
 
-    stt_model: str = "whisper-local-placeholder"
-    extraction_model: str = "ollama-local-placeholder"
+    stt_model: str = ""
+    extraction_model: str = ""
+    recap_model: str = ""
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    extraction_timeout_seconds: int = 60
     sync_base_url: str | None = None
     cloud_api_key: str | None = None
+    audio_storage_dir: str = DEFAULT_AUDIO_DIR
+    stt_executable_path: str | None = None
+    stt_model_path: str | None = None
 
 
 @lru_cache(maxsize=1)

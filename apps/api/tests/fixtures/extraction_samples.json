@@ -1,0 +1,50 @@
+[
+  {
+    "id": "sample-1",
+    "raw_text": "Email Sam about the vendor quote and draft the Atlas roadmap tomorrow.",
+    "expected_min_candidates": 2,
+    "expected_max_candidates": 3,
+    "expect_temporal_signal": true,
+    "notes": "Should split into follow-up plus planning task."
+  },
+  {
+    "id": "sample-2",
+    "raw_text": "Book the dentist appointment, pay the electric bill, and clean up the project notes this week.",
+    "expected_min_candidates": 2,
+    "expected_max_candidates": 3,
+    "expect_temporal_signal": true,
+    "notes": "Administrative trio with moderate splitting."
+  },
+  {
+    "id": "sample-3",
+    "raw_text": "Follow up with design, prepare launch checklist, and review analytics for Northstar.",
+    "expected_min_candidates": 2,
+    "expected_max_candidates": 3,
+    "expect_temporal_signal": false,
+    "notes": "Should avoid inventing a due date."
+  },
+  {
+    "id": "sample-4",
+    "raw_text": "Need to think through the migration approach for billing.",
+    "expected_min_candidates": 0,
+    "expected_max_candidates": 1,
+    "expect_temporal_signal": false,
+    "notes": "Borderline vague note. Open questions are acceptable."
+  },
+  {
+    "id": "sample-5",
+    "raw_text": "Tomorrow morning send the draft to Priya, then schedule the review for Friday.",
+    "expected_min_candidates": 2,
+    "expected_max_candidates": 2,
+    "expect_temporal_signal": true,
+    "notes": "Should keep explicit timing because the text strongly signals it."
+  },
+  {
+    "id": "sample-6",
+    "raw_text": "Atlas launch blockers: legal copy still missing, confirm analytics tags, and finalize email copy if time allows.",
+    "expected_min_candidates": 2,
+    "expected_max_candidates": 3,
+    "expect_temporal_signal": false,
+    "notes": "Should avoid adding a date and keep titles concrete."
+  }
+]
