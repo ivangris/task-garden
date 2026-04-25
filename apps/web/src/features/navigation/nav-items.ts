@@ -6,13 +6,11 @@ export type NavItem = {
 };
 
 export const navItems: NavItem[] = [
-  { id: "capture", label: "Capture", description: "Thoughts in, structure later.", icon: "◌" },
-  { id: "inbox", label: "Inbox", description: "Fresh work waiting for shape.", icon: "◎" },
-  { id: "today", label: "Today", description: "What deserves attention now.", icon: "◔" },
-  { id: "this-week", label: "This Week", description: "A calmer view of the next stretch.", icon: "◗" },
-  { id: "projects", label: "Projects", description: "Grouped work with light context.", icon: "▣" },
-  { id: "completed", label: "Completed", description: "Closed loops and visible momentum.", icon: "✦" },
-  { id: "garden", label: "Garden", description: "A living read on care and recovery.", icon: "✿" },
-  { id: "recaps", label: "Recaps", description: "Grounded snapshots of progress.", icon: "✧" },
-  { id: "settings", label: "Settings", description: "Providers, local mode, and device basics.", icon: "⚙" }
+  { id: "capture", label: "Capture", description: "Voice and notes.", icon: "C" },
+  { id: "inbox", label: "Inbox", description: "New and manual tasks.", icon: "I" },
+  { id: "planning", label: "Tasks", description: "Plan by date and project.", icon: "T" },
+  { id: "projects", label: "Projects", description: "Groups and context.", icon: "P" },
+  { id: "garden", label: "Garden", description: "Visible progress.", icon: "G" },
+  { id: "recaps", label: "Recaps", description: "What moved.", icon: "R" },
+  { id: "settings", label: "Settings", description: "Local providers.", icon: "S" },
 ];

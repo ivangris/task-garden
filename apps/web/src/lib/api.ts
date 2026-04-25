@@ -5,6 +5,8 @@ import type {
   CreateEntryInput,
   CreateProjectInput,
   CreateTaskInput,
+  DeleteProjectMode,
+  DeleteProjectResult,
   ExtractionBatch,
   GardenOverview,
   GardenTilesPayload,
@@ -20,6 +22,7 @@ import type {
   SyncStatus,
   Task,
   TranscriptionResult,
+  UpdateProjectInput,
   UpdateTaskInput,
   WeeklyPreview,
 } from "./types";
@@ -97,6 +100,10 @@ export const api = {
   listProjects: () => request<{ items: Project[] }>("/projects"),
   createProject: (payload: CreateProjectInput) =>
     request<Project>("/projects", { method: "POST", body: JSON.stringify(payload) }),
+  patchProject: (projectId: string, payload: UpdateProjectInput) =>
+    request<Project>(`/projects/${projectId}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteProject: (projectId: string, taskMode: DeleteProjectMode) =>
+    request<DeleteProjectResult>(`/projects/${projectId}?task_mode=${encodeURIComponent(taskMode)}`, { method: "DELETE" }),
   getGardenState: () => request<GardenOverview>("/garden/state"),
   getGardenTiles: () => request<GardenTilesPayload>("/garden/tiles"),
   recomputeGarden: () => request<GardenOverview>("/garden/recompute", { method: "POST" }),

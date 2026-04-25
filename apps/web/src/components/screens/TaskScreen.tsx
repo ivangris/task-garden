@@ -1,5 +1,7 @@
+import { useState, type FormEvent } from "react";
+
 import { formatDate, toApiDate, toDateInputValue, type TaskFilters } from "../../features/tasks/task-utils";
-import type { CurrentRecommendations, Project, Task, TaskStatus, WeeklyPreview } from "../../lib/types";
+import type { CreateTaskInput, CurrentRecommendations, Project, Task, TaskEffort, TaskEnergy, TaskPriority, TaskStatus, WeeklyPreview } from "../../lib/types";
 
 type TaskScreenProps = {
   title: string;
@@ -9,7 +11,9 @@ type TaskScreenProps = {
   recommendations: CurrentRecommendations | null;
   weeklyPreview: WeeklyPreview | null;
   filters: TaskFilters;
+  allowManualCreate: boolean;
   onFiltersChange: (filters: TaskFilters) => void;
+  onCreateTask: (payload: CreateTaskInput) => Promise<void>;
   onStatusChange: (taskId: string, status: TaskStatus) => Promise<void>;
   onComplete: (taskId: string) => Promise<void>;
   onReopen: (taskId: string) => Promise<void>;
@@ -18,6 +22,16 @@ type TaskScreenProps = {
 };
 
 const statusOptions: TaskStatus[] = ["inbox", "planned", "in_progress", "blocked", "completed", "archived"];
+const priorityOptions: TaskPriority[] = ["low", "medium", "high", "critical"];
+const effortOptions: TaskEffort[] = ["small", "medium", "large"];
+const energyOptions: TaskEnergy[] = ["low", "medium", "high"];
+const dateRangeOptions: { value: TaskFilters["dateRange"]; label: string }[] = [
+  { value: "all_active", label: "All active" },
+  { value: "today", label: "Today" },
+  { value: "this_week", label: "This week" },
+  { value: "overdue", label: "Overdue" },
+  { value: "completed", label: "Completed" },
+];
 
 export function TaskScreen({
   title,
@@ -27,13 +41,49 @@ export function TaskScreen({
   recommendations,
   weeklyPreview,
   filters,
+  allowManualCreate,
   onFiltersChange,
+  onCreateTask,
   onStatusChange,
   onComplete,
   onReopen,
   onProjectChange,
   onDueDateChange,
 }: TaskScreenProps): JSX.Element {
+  const [showManualTask, setShowManualTask] = useState(false);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDetails, setTaskDetails] = useState("");
+  const [taskProjectId, setTaskProjectId] = useState("");
+  const [taskDueDate, setTaskDueDate] = useState("");
+  const [taskStatus, setTaskStatus] = useState<TaskStatus>("inbox");
+  const [taskPriority, setTaskPriority] = useState<TaskPriority>("medium");
+  const [taskEffort, setTaskEffort] = useState<TaskEffort>("medium");
+  const [taskEnergy, setTaskEnergy] = useState<TaskEnergy>("medium");
+  const completedCount = tasks.filter((task) => task.status === "completed").length;
+
+  async function handleCreateTask(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    await onCreateTask({
+      title: taskTitle,
+      details: taskDetails || undefined,
+      project_id: taskProjectId || undefined,
+      due_date: toApiDate(taskDueDate),
+      status: taskStatus,
+      priority: taskPriority,
+      effort: taskEffort,
+      energy: taskEnergy,
+    });
+    setTaskTitle("");
+    setTaskDetails("");
+    setTaskProjectId("");
+    setTaskDueDate("");
+    setTaskStatus("inbox");
+    setTaskPriority("medium");
+    setTaskEffort("medium");
+    setTaskEnergy("medium");
+    setShowManualTask(false);
+  }
+
   return (
     <section className="workspace">
       <div className="hero-card hero-card--compact">
@@ -43,8 +93,111 @@ export function TaskScreen({
         </div>
         <div className="hero-card__stats">
           <span className="stat-pill">{tasks.length} visible</span>
+          {completedCount > 0 ? <span className="stat-pill">{completedCount} completed</span> : null}
         </div>
       </div>
+
+      {allowManualCreate ? (
+        <section className={`surface-panel manual-task-panel${showManualTask ? " manual-task-panel--open" : ""}`}>
+          <div className="surface-panel__header">
+            <div>
+              <p className="section-eyebrow">Quick Add</p>
+              <h4>Add a task manually</h4>
+            </div>
+            <button className="secondary-button secondary-button--ghost" type="button" onClick={() => setShowManualTask((value) => !value)}>
+              {showManualTask ? "Hide" : "Add manually"}
+            </button>
+          </div>
+
+          {showManualTask ? (
+            <form onSubmit={handleCreateTask}>
+              <div className="form-grid form-grid--manual-task">
+                <label className="field field--full">
+                  <span>Title</span>
+                  <input value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} required />
+                </label>
+
+                <label className="field field--full">
+                  <span>Details</span>
+                  <textarea
+                    className="text-area text-area--compact"
+                    value={taskDetails}
+                    onChange={(event) => setTaskDetails(event.target.value)}
+                    rows={3}
+                  />
+                </label>
+
+                <label className="field">
+                  <span>Project</span>
+                  <select value={taskProjectId} onChange={(event) => setTaskProjectId(event.target.value)}>
+                    <option value="">No project</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="field">
+                  <span>Due date</span>
+                  <input type="date" value={taskDueDate} onChange={(event) => setTaskDueDate(event.target.value)} />
+                </label>
+
+                <label className="field">
+                  <span>Status</span>
+                  <select value={taskStatus} onChange={(event) => setTaskStatus(event.target.value as TaskStatus)}>
+                    {statusOptions.filter((status) => status !== "archived").map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="field">
+                  <span>Priority</span>
+                  <select value={taskPriority} onChange={(event) => setTaskPriority(event.target.value as TaskPriority)}>
+                    {priorityOptions.map((priority) => (
+                      <option key={priority} value={priority}>
+                        {priority}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="field">
+                  <span>Effort</span>
+                  <select value={taskEffort} onChange={(event) => setTaskEffort(event.target.value as TaskEffort)}>
+                    {effortOptions.map((effort) => (
+                      <option key={effort} value={effort}>
+                        {effort}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="field">
+                  <span>Energy</span>
+                  <select value={taskEnergy} onChange={(event) => setTaskEnergy(event.target.value as TaskEnergy)}>
+                    {energyOptions.map((energy) => (
+                      <option key={energy} value={energy}>
+                        {energy}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="form-actions">
+                <button className="primary-button" type="submit">
+                  Create Task
+                </button>
+              </div>
+            </form>
+          ) : null}
+        </section>
+      ) : null}
 
       {recommendations && recommendations.items.length > 0 ? (
         <section className="planning-strip">
@@ -63,7 +216,7 @@ export function TaskScreen({
                   <div key={task.id} className="planning-focus-item">
                     <strong>{task.title}</strong>
                     <span>
-                      {task.project_name ?? "No project"} · due {formatDate(task.due_date)}
+                      {task.project_name ?? "No project"} / due {formatDate(task.due_date)}
                     </span>
                   </div>
                 ))}
@@ -109,6 +262,26 @@ export function TaskScreen({
           </div>
           <div className="filter-row">
             <label className="field field--inline">
+              <span>Date</span>
+              <select
+                value={filters.dateRange}
+                onChange={(event) =>
+                  onFiltersChange({
+                    ...filters,
+                    dateRange: event.target.value as TaskFilters["dateRange"],
+                    status: event.target.value === "completed" ? "all" : filters.status,
+                  })
+                }
+              >
+                {dateRangeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="field field--inline">
               <span>Status</span>
               <select
                 value={filters.status}
@@ -149,17 +322,17 @@ export function TaskScreen({
             <span>Actions</span>
           </div>
 
-          {tasks.length === 0 ? <p className="empty-state">No tasks match this view yet.</p> : null}
+          {tasks.length === 0 ? <p className="empty-state">Nothing here right now.</p> : null}
 
           {tasks.map((task) => (
-            <article key={task.id} className="task-row">
+            <article key={task.id} className={`task-row task-row--${task.status}`}>
               <div className="task-row__main">
                 <strong>{task.title}</strong>
                 {task.details ? <p>{task.details}</p> : null}
                 <div className="chip-row">
-                  <span className="meta-chip">priority {task.priority}</span>
-                  <span className="meta-chip">effort {task.effort}</span>
-                  <span className="meta-chip">energy {task.energy}</span>
+                  <span className={`meta-chip meta-chip--priority-${task.priority}`}>{task.priority}</span>
+                  <span className="meta-chip">{task.effort}</span>
+                  <span className="meta-chip">{task.energy} energy</span>
                 </div>
               </div>
 
@@ -190,6 +363,7 @@ export function TaskScreen({
 
               <div className="task-row__dates">
                 <span>Created {formatDate(task.created_at)}</span>
+                {task.completed_at ? <span>Completed {formatDate(task.completed_at)}</span> : null}
                 <label className="field field--inline">
                   <span className="sr-only">Due date</span>
                   <input

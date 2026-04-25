@@ -9,6 +9,18 @@ class CreateProjectRequest(BaseModel):
     color_token: str | None = Field(default=None, max_length=64)
 
 
+class UpdateProjectRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=1000)
+    color_token: str | None = Field(default=None, max_length=64)
+
+
+class DeleteProjectResponse(BaseModel):
+    project_id: str
+    task_mode: str
+    affected_task_count: int
+
+
 class ProjectResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

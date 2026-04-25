@@ -108,7 +108,7 @@ Cloud providers must be implemented in a way that they can remain disabled by de
 5. Review and confirm flow is identical to text flow.
 
 ### 3. Task management flow
-1. User reviews Inbox, Today, This Week, Projects, Completed.
+1. User reviews Inbox, Tasks date/status filters, Projects, and completed task history.
 2. User updates status, edits tasks, adds subtasks, reopens tasks.
 3. Activity is logged.
 4. Garden state and recap metrics are updated through domain services.
@@ -137,10 +137,9 @@ Cloud providers must be implemented in a way that they can remain disabled by de
 
 ### Task management
 - inbox
-- today view
-- week view
+- tasks view with Today, This week, Overdue, and Completed filters
 - projects view
-- completed view
+- completed task history through task filters
 - search
 - filters
 - subtasks

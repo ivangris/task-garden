@@ -73,7 +73,7 @@ Success criteria:
 The user wants to know what to do now.
 
 Success criteria:
-- Today and This Week are obvious and scannable
+- date filters for today, this week, overdue, and completed work are obvious and scannable
 - task weight is visible
 - small wins are easy to identify
 - stale tasks are surfaced without shame
@@ -94,10 +94,8 @@ Success criteria:
 ### Primary navigation
 - Capture
 - Inbox
-- Today
-- This Week
+- Tasks
 - Projects
-- Completed
 - Garden
 - Recaps
 - Settings
@@ -205,10 +203,8 @@ Each candidate should surface:
 
 ### Helpful views
 - Inbox for unsorted/new items
-- Today for immediate execution
-- This Week for planning
+- Tasks for immediate execution, weekly planning, overdue work, and completed history through filters
 - Projects for grouped context
-- Completed for satisfaction and history
 
 ---
 
@@ -380,7 +376,7 @@ Use:
 - focused input/capture references
 - lightweight chat-adjacent composition without copying chat UI
 
-### Inbox / Today / This Week
+### Inbox / Tasks
 Use:
 - productivity app list patterns
 - clean dashboard tables/lists

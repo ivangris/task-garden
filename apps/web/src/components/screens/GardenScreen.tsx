@@ -26,7 +26,7 @@ export function GardenScreen({ overview, tilesPayload, onRecompute }: GardenScre
       <div className="hero-card hero-card--compact">
         <div>
           <p className="section-eyebrow">Garden</p>
-          <h3>A calm visual read of momentum, repair, and neglect.</h3>
+          <h3>Your work turning into a quieter, greener place.</h3>
         </div>
         <div className="hero-card__stats">
           <span className="stat-pill">{overview.state.stage_key.replace(/_/g, " ")}</span>
@@ -39,7 +39,7 @@ export function GardenScreen({ overview, tilesPayload, onRecompute }: GardenScre
           <div className="surface-panel__header">
             <div>
               <p className="section-eyebrow">Garden View</p>
-              <h4>The plot shifts toward an oasis as care accumulates.</h4>
+              <h4>Restoration at a glance</h4>
             </div>
             <button className="secondary-button" type="button" onClick={() => void onRecompute()}>
               Recompute
@@ -54,7 +54,7 @@ export function GardenScreen({ overview, tilesPayload, onRecompute }: GardenScre
           <div className="surface-panel__header">
             <div>
               <p className="section-eyebrow">State</p>
-              <h4>Current garden health</h4>
+              <h4>Current health</h4>
             </div>
           </div>
           <div className="chip-row">
@@ -73,7 +73,7 @@ export function GardenScreen({ overview, tilesPayload, onRecompute }: GardenScre
             <span className="section-eyebrow">Unlocks</span>
             <span className="meta-chip">{overview.unlocks.length}</span>
           </div>
-          <h4>Unlocked items</h4>
+          <h4>Unlocked</h4>
           <div className="chip-row">
             {overview.unlocks.length === 0 ? <span className="meta-chip">No unlocks yet</span> : null}
             {overview.unlocks.map((item) => (
@@ -86,13 +86,11 @@ export function GardenScreen({ overview, tilesPayload, onRecompute }: GardenScre
 
         <article className="surface-panel planning-card planning-card--warning">
           <div className="planning-card__meta">
-            <span className="section-eyebrow">Pressure</span>
+            <span className="section-eyebrow">Repair</span>
             <span className="meta-chip">{overview.recent_decay_events.length} decay events</span>
           </div>
-          <h4>Recent decay vs recovery</h4>
-          <p className="muted-copy">
-            Overdue active work adds pressure. Finishing things repairs the space again.
-          </p>
+          <h4>Recent changes</h4>
+          <p className="muted-copy">A quick read on what improved and what needs care.</p>
         </article>
       </section>
 
@@ -101,7 +99,7 @@ export function GardenScreen({ overview, tilesPayload, onRecompute }: GardenScre
           <div className="surface-panel__header">
             <div>
               <p className="section-eyebrow">Zones</p>
-              <h4>Baseline layout</h4>
+              <h4>Garden areas</h4>
             </div>
           </div>
           <div className="project-list">
@@ -129,7 +127,7 @@ export function GardenScreen({ overview, tilesPayload, onRecompute }: GardenScre
           <div className="surface-panel__header">
             <div>
               <p className="section-eyebrow">Events</p>
-              <h4>Most recent signals</h4>
+              <h4>Latest activity</h4>
             </div>
           </div>
           <div className="project-list">
@@ -150,7 +148,7 @@ export function GardenScreen({ overview, tilesPayload, onRecompute }: GardenScre
               </article>
             ))}
             {overview.recent_recovery_events.length === 0 && overview.recent_decay_events.length === 0 ? (
-              <p className="empty-state">Quiet for now. The first recoveries and repairs will start to show up here.</p>
+              <p className="empty-state">Quiet for now. Completed work will show up here soon.</p>
             ) : null}
           </div>
         </section>

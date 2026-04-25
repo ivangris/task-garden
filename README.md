@@ -16,7 +16,7 @@ The app is built to work well in local-only mode first, while keeping the door o
 - preservation of raw notes and transcripts
 - AI-assisted task extraction with review before save
 - task organization by project, priority, effort, energy, labels, and date
-- Inbox, Today, This Week, Projects, Completed, and Search views
+- Inbox, Tasks with date/status filters, Projects, Garden, Recaps, and Settings views
 - deterministic recommendation engine
 - isometric pixel-art garden meta-game
 - weekly, monthly, and yearly accomplishment recaps
@@ -143,6 +143,43 @@ cd apps/api
 ```
 
 Add `--json` if you want machine-readable output.
+
+### Browser QA harness
+
+The browser smoke suite uses Playwright and an isolated QA SQLite database. Node `22.22.0` or newer is recommended for browser automation tooling; the repo includes `.node-version`.
+
+Install browsers once:
+
+```bash
+cd apps/web
+npx playwright install chromium
+```
+
+Run the smoke suite from the repo root:
+
+```bash
+npm run qa:e2e
+```
+
+For headed inspection:
+
+```bash
+npm run qa:e2e:headed
+```
+
+The suite starts the FastAPI backend on `127.0.0.1:18000` with mock local providers and a reset QA database, then starts the Vite app on `127.0.0.1:15173` and verifies the core Capture, Inbox, Tasks, Projects, Garden, Recaps, and Settings flows.
+
+### Demo data
+
+Seed a deterministic demo database for visual QA:
+
+```bash
+npm run seed:demo -- --reset
+```
+
+The script prints the database URL to use when starting the API. It creates transcript/source material, active tasks, overdue tasks, completed tasks, projects, garden state, recommendations, and recaps.
+
+Manual QA steps live in [docs/QA_CHECKLIST.md](./docs/QA_CHECKLIST.md).
 
 ## Repository hygiene
 

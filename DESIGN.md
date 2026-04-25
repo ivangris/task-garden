@@ -248,10 +248,8 @@ Preferred navigation:
 Suggested nav items:
 - Capture
 - Inbox
-- Today
-- This Week
+- Tasks
 - Projects
-- Completed
 - Garden
 - Recaps
 - Settings

@@ -15,6 +15,7 @@ import type {
   CreateEntryInput,
   CreateProjectInput,
   CreateTaskInput,
+  DeleteProjectMode,
   ExtractionBatch,
   GardenOverview,
   GardenTilesPayload,
@@ -28,8 +29,8 @@ import type {
   Settings,
   SyncStatus,
   Task,
-  TaskStatus,
   TranscriptionResult,
+  UpdateProjectInput,
   UpdateTaskInput,
   WeeklyPreview,
 } from "../../lib/types";
@@ -51,10 +52,8 @@ function shellToneForStage(stageKey: string | undefined): "desert" | "recovering
 }
 
 const taskScreenCopy: Record<Exclude<NavScreen, "capture" | "projects" | "garden" | "recaps" | "settings">, { title: string; subtitle: string }> = {
-  inbox: { title: "Inbox", subtitle: "New work and loose ends waiting for a plan." },
-  today: { title: "Today", subtitle: "Only work with a due date that matters right now." },
-  "this-week": { title: "This Week", subtitle: "The next six days of commitments in one compact view." },
-  completed: { title: "Completed", subtitle: "Closed loops, shipped work, and easy reopen support." },
+  inbox: { title: "Inbox", subtitle: "New tasks, quick adds, and completed work when you need it." },
+  planning: { title: "Tasks", subtitle: "Filter active work by date, status, and project." },
 };
 
 export function AppShell(): JSX.Element {
@@ -74,7 +73,8 @@ export function AppShell(): JSX.Element {
   const [activeExtraction, setActiveExtraction] = useState<ExtractionBatch | null>(null);
   const [latestTranscription, setLatestTranscription] = useState<TranscriptionResult | null>(null);
   const [extractionNotice, setExtractionNotice] = useState<string | null>(null);
-  const [filters, setFilters] = useState<TaskFilters>({ status: "all", projectId: "all" });
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [filters, setFilters] = useState<TaskFilters>({ status: "all", projectId: "all", dateRange: "all_active" });
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingRecaps, setIsLoadingRecaps] = useState(false);
   const [isGeneratingNarrative, setIsGeneratingNarrative] = useState(false);
@@ -135,6 +135,14 @@ export function AppShell(): JSX.Element {
     }
   }, [activeItemId, isLoading]);
 
+  useEffect(() => {
+    setFilters({
+      status: activeItemId === "inbox" ? "inbox" : "all",
+      projectId: "all",
+      dateRange: "all_active",
+    });
+  }, [activeItemId]);
+
   const visibleTasks = useMemo(() => {
     const scoped = tasksForScreen(activeItemId, tasks);
     return applyTaskFilters(scoped, filters);
@@ -144,13 +152,15 @@ export function AppShell(): JSX.Element {
   const countsByProject = useMemo(() => projectNameMap(projects), [projects]);
   const shellTone = shellToneForStage(gardenOverview?.state.stage_key);
 
-  async function handleCreateEntry(payload: CreateEntryInput): Promise<void> {
+  async function handleCreateEntry(payload: CreateEntryInput): Promise<RawEntry> {
     try {
-      await api.createEntry(payload);
+      const entry = await api.createEntry(payload);
       const updated = await api.listEntries();
       setEntries(updated.items);
-      setExtractionNotice("Saved. Extract whenever you're ready.");
+      setExtractionNotice("Note saved.");
+      setActionNotice("Note saved. Task suggestions are one click away.");
       setErrorMessage(null);
+      return entry;
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to save raw entry.");
       throw error;
@@ -160,7 +170,7 @@ export function AppShell(): JSX.Element {
   async function handleArchiveEntry(entryId: string): Promise<void> {
     const archived = await api.archiveEntry(entryId);
     setEntries((current) => current.filter((entry) => entry.id !== archived.id));
-    setExtractionNotice("Note removed from Recent Notes.");
+    setExtractionNotice("Transcript removed.");
   }
 
   async function handleCreateAudioEntry(payload: CreateAudioEntryInput = {}): Promise<RawEntry> {
@@ -176,7 +186,8 @@ export function AppShell(): JSX.Element {
     const updatedEntries = await api.listEntries();
     setEntries(updatedEntries.items);
     setLatestTranscription(result);
-    setExtractionNotice("Transcript saved. Extract from it whenever you're ready.");
+    setExtractionNotice("Transcript saved.");
+    setActionNotice("Transcript saved. You can extract task suggestions now.");
     return result;
   }
 
@@ -184,7 +195,8 @@ export function AppShell(): JSX.Element {
     try {
       const extraction = await api.extractEntry(entryId);
       setActiveExtraction(extraction);
-      setExtractionNotice("Suggestions are ready to review.");
+      setExtractionNotice(`${extraction.candidates.length} task suggestion${extraction.candidates.length === 1 ? "" : "s"} ready.`);
+      setActionNotice("Task suggestions are ready to review.");
       const updatedEntries = await api.listEntries();
       setEntries(updatedEntries.items);
       setErrorMessage(null);
@@ -218,7 +230,9 @@ export function AppShell(): JSX.Element {
           ? { ...current, needs_review: false, candidates: result.updated_candidates }
           : current,
       );
-      setExtractionNotice(`${result.accepted_count} item${result.accepted_count === 1 ? "" : "s"} added to Inbox.`);
+      setExtractionNotice(`${result.accepted_count} task${result.accepted_count === 1 ? "" : "s"} added to Inbox.`);
+      setActionNotice(`${result.accepted_count} task${result.accepted_count === 1 ? "" : "s"} added to Inbox.`);
+      setActiveItemId("inbox");
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to confirm extraction.");
@@ -227,7 +241,7 @@ export function AppShell(): JSX.Element {
   }
 
   async function handleCreateTask(payload: CreateTaskInput): Promise<void> {
-    await api.createTask(payload);
+    const created = await api.createTask(payload);
     const [updated, recommendationData, weeklyPreviewData, recomputedGarden, refreshedGardenTiles] = await Promise.all([
       api.listTasks(),
       api.getCurrentRecommendations(),
@@ -240,6 +254,12 @@ export function AppShell(): JSX.Element {
     setWeeklyPreview(weeklyPreviewData);
     setGardenOverview(recomputedGarden);
     setGardenTiles(refreshedGardenTiles);
+    setFilters({
+      status: created.status === "completed" ? "all" : created.status,
+      projectId: created.project_id ?? "all",
+      dateRange: created.status === "completed" ? "completed" : "all_active",
+    });
+    setActionNotice("Task added.");
   }
 
   async function handlePatchTask(taskId: string, payload: UpdateTaskInput): Promise<void> {
@@ -296,6 +316,36 @@ export function AppShell(): JSX.Element {
     ]);
     setCurrentRecommendations(recommendationData);
     setWeeklyPreview(weeklyPreviewData);
+    setActionNotice("Project saved.");
+  }
+
+  async function handleUpdateProject(projectId: string, payload: UpdateProjectInput): Promise<void> {
+    const updated = await api.patchProject(projectId, payload);
+    setProjects((current) => current.map((project) => (project.id === updated.id ? updated : project)).sort((a, b) => a.name.localeCompare(b.name)));
+    setActionNotice("Project updated.");
+  }
+
+  async function handleDeleteProject(projectId: string, taskMode: DeleteProjectMode): Promise<void> {
+    const result = await api.deleteProject(projectId, taskMode);
+    const [updatedProjects, updatedTasks, recommendationData, weeklyPreviewData, recomputedGarden, refreshedGardenTiles] = await Promise.all([
+      api.listProjects(),
+      api.listTasks(),
+      api.getCurrentRecommendations(),
+      api.createWeeklyPreview(),
+      api.recomputeGarden(),
+      api.getGardenTiles(),
+    ]);
+    setProjects(updatedProjects.items);
+    setTasks(updatedTasks.items);
+    setCurrentRecommendations(recommendationData);
+    setWeeklyPreview(weeklyPreviewData);
+    setGardenOverview(recomputedGarden);
+    setGardenTiles(refreshedGardenTiles);
+    setActionNotice(
+      taskMode === "delete"
+        ? `Project deleted with ${result.affected_task_count} task${result.affected_task_count === 1 ? "" : "s"}.`
+        : `Project deleted. ${result.affected_task_count} task${result.affected_task_count === 1 ? "" : "s"} kept unassigned.`,
+    );
   }
 
   async function handleSaveSettings(payload: Partial<Settings>): Promise<void> {
@@ -425,20 +475,26 @@ export function AppShell(): JSX.Element {
         return (
           <CaptureScreen
             entries={entries}
-            projects={projects}
             activeExtraction={activeExtraction}
             latestTranscription={latestTranscription}
             extractionNotice={extractionNotice}
             onCreateEntry={handleCreateEntry}
             onTranscribeAudio={handleTranscribeAudio}
-            onCreateTask={handleCreateTask}
             onRunExtract={handleRunExtract}
             onConfirmExtraction={handleConfirmExtraction}
             onArchiveEntry={handleArchiveEntry}
           />
         );
       case "projects":
-        return <ProjectsScreen projects={projects} tasks={tasks} onCreateProject={handleCreateProject} />;
+        return (
+          <ProjectsScreen
+            projects={projects}
+            tasks={tasks}
+            onCreateProject={handleCreateProject}
+            onUpdateProject={handleUpdateProject}
+            onDeleteProject={handleDeleteProject}
+          />
+        );
       case "garden":
         return <GardenScreen overview={gardenOverview} tilesPayload={gardenTiles} onRecompute={handleRecomputeGarden} />;
       case "recaps":
@@ -465,19 +521,19 @@ export function AppShell(): JSX.Element {
           />
         );
       case "inbox":
-      case "today":
-      case "this-week":
-      case "completed":
+      case "planning":
         return (
           <TaskScreen
             title={taskScreenCopy[activeItemId].title}
             subtitle={taskScreenCopy[activeItemId].subtitle}
             tasks={visibleTasks.map((task) => ({ ...task, project_name: task.project_name ?? countsByProject[task.project_id ?? ""] ?? null }))}
             projects={projects}
-            recommendations={activeItemId === "today" || activeItemId === "this-week" ? currentRecommendations : null}
-            weeklyPreview={activeItemId === "this-week" ? weeklyPreview : null}
+            recommendations={activeItemId === "planning" ? currentRecommendations : null}
+            weeklyPreview={activeItemId === "planning" ? weeklyPreview : null}
             filters={filters}
+            allowManualCreate={activeItemId === "inbox"}
             onFiltersChange={setFilters}
+            onCreateTask={handleCreateTask}
             onStatusChange={(taskId, status) => handlePatchTask(taskId, { status })}
             onComplete={handleCompleteTask}
             onReopen={handleReopenTask}
@@ -539,6 +595,14 @@ export function AppShell(): JSX.Element {
         </header>
 
         {errorMessage ? <div className="error-banner">{errorMessage}</div> : null}
+        {actionNotice ? (
+          <div className="info-banner info-banner--global">
+            <span>{actionNotice}</span>
+            <button className="secondary-button secondary-button--ghost" type="button" onClick={() => setActionNotice(null)}>
+              Dismiss
+            </button>
+          </div>
+        ) : null}
         {renderScreen()}
       </main>
     </div>

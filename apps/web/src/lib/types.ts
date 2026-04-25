@@ -1,4 +1,4 @@
-export type NavScreen = "capture" | "inbox" | "today" | "this-week" | "projects" | "completed" | "garden" | "recaps" | "settings";
+export type NavScreen = "capture" | "inbox" | "planning" | "projects" | "garden" | "recaps" | "settings";
 
 export type SourceType = "typed" | "pasted" | "audio_transcript";
 export type TaskStatus = "inbox" | "planned" | "in_progress" | "blocked" | "completed" | "archived";
@@ -301,6 +301,16 @@ export type CreateProjectInput = {
   name: string;
   description?: string;
   color_token?: string;
+};
+
+export type UpdateProjectInput = Partial<CreateProjectInput>;
+
+export type DeleteProjectMode = "unassign" | "delete";
+
+export type DeleteProjectResult = {
+  project_id: string;
+  task_mode: DeleteProjectMode;
+  affected_task_count: number;
 };
 
 export type CreateTaskInput = {

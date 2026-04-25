@@ -48,7 +48,7 @@ export function RecapsScreen({
           <p className="section-eyebrow">Recaps</p>
           <h3>{heroCard?.title ?? "Look back at what moved."}</h3>
           <p className="muted-copy">
-            {heroCard?.supporting_text ?? "Deterministic accomplishment snapshots built from tasks, activity, and garden progress."}
+            {heroCard?.supporting_text ?? "A clean snapshot of what you finished, where momentum showed up, and how the garden changed."}
           </p>
         </div>
         <div className="recap-tabs" role="tablist" aria-label="Recap periods">
@@ -84,7 +84,7 @@ export function RecapsScreen({
         <section className="surface-panel surface-panel--empty-state">
           <p className="section-eyebrow">Recap</p>
           <h4>This view is ready whenever you want to look back.</h4>
-          <p className="empty-state">Generate a {activePeriod} recap to turn recent work, garden change, and streaks into a calm summary.</p>
+          <p className="empty-state">Generate a {activePeriod} recap when you want a simple look back.</p>
         </section>
       ) : null}
 
@@ -118,9 +118,8 @@ export function RecapsScreen({
               <div className="surface-panel__header surface-panel__header--stack">
                 <div>
                   <p className="section-eyebrow">Highlights</p>
-                  <h4>Concrete wins from the period</h4>
+                  <h4>Wins from this period</h4>
                 </div>
-                <p className="muted-copy">The facts stay primary. These cards simply give the period a clearer shape.</p>
               </div>
               <div className="recap-card-grid">
                 {recap.cards
@@ -175,7 +174,7 @@ export function RecapsScreen({
                 {!narrative || narrative.generation_status === "not_generated" ? (
                   <div className="recap-narrative__notice">
                     <strong>Add reflection on demand.</strong>
-                    <p>The recap cards already stand on their own. This only adds a short grounded readback.</p>
+                    <p>Add a short readback when you want the recap to feel more reflective.</p>
                   </div>
                 ) : null}
               </div>
@@ -201,7 +200,7 @@ export function RecapsScreen({
                     </div>
                   </article>
                 ))}
-                {recap.project_summaries.length === 0 ? <p className="empty-state">No project theme stood out in this slice yet.</p> : null}
+                {recap.project_summaries.length === 0 ? <p className="empty-state">No project theme stood out yet.</p> : null}
               </div>
               {topProjectNames.length > 0 ? <p className="muted-copy">{`Top themes: ${topProjectNames.join(", ")}`}</p> : null}
             </section>
@@ -209,23 +208,18 @@ export function RecapsScreen({
             <section className="surface-panel">
               <div className="surface-panel__header surface-panel__header--stack">
                 <div>
-                  <p className="section-eyebrow">Streaks</p>
-                  <h4>Consistency and comeback</h4>
+                  <p className="section-eyebrow">Garden Summary</p>
+                  <h4>Visible progress</h4>
                 </div>
               </div>
-              <div className="recap-streak-block">
-                <div>
-                  <strong>{recap.streak_summary?.period_best_streak_days ?? 0}</strong>
-                  <span>best streak in period</span>
+              <div className="recap-garden-summary">
+                <div className="chip-row">
+                  <span className="meta-chip">{`XP +${metricNumber(metrics, "xp_gained") ?? 0}`}</span>
+                  <span className="meta-chip">{`${metricNumber(metrics, "unlocks_earned") ?? 0} unlocks`}</span>
+                  <span className="meta-chip">{`${metricNumber(metrics, "overdue_recovered_count") ?? 0} recovered`}</span>
                 </div>
-                <div>
-                  <strong>{recap.streak_summary?.longest_streak_days ?? 0}</strong>
-                  <span>longest overall streak</span>
-                </div>
-                <div>
-                  <strong>{recap.streak_summary?.current_streak_days ?? 0}</strong>
-                  <span>current streak</span>
-                </div>
+                <p className="muted-copy">{stageChangeLabel(metricText(metrics, "garden_stage_change"))}</p>
+                <p className="muted-copy">{`Biggest win: ${metricText(metrics, "biggest_completed_task") ?? "Nothing completed yet."}`}</p>
               </div>
             </section>
           </section>
@@ -245,25 +239,30 @@ export function RecapsScreen({
                     <p>{item.description}</p>
                   </article>
                 ))}
-                {recap.milestones.length === 0 ? <p className="empty-state">No big threshold landed this time, but the progress still counts.</p> : null}
+                {recap.milestones.length === 0 ? <p className="empty-state">No milestone this time. The work still counts.</p> : null}
               </div>
             </section>
 
             <section className="surface-panel">
               <div className="surface-panel__header surface-panel__header--stack">
                 <div>
-                  <p className="section-eyebrow">Garden Summary</p>
-                  <h4>From work to visible restoration</h4>
+                  <p className="section-eyebrow">Streaks</p>
+                  <h4>Consistency and comeback</h4>
                 </div>
               </div>
-              <div className="recap-garden-summary">
-                <div className="chip-row">
-                  <span className="meta-chip">{`XP +${metricNumber(metrics, "xp_gained") ?? 0}`}</span>
-                  <span className="meta-chip">{`${metricNumber(metrics, "unlocks_earned") ?? 0} unlocks`}</span>
-                  <span className="meta-chip">{`${metricNumber(metrics, "overdue_recovered_count") ?? 0} overdue recoveries`}</span>
+              <div className="recap-streak-block">
+                <div>
+                  <strong>{recap.streak_summary?.period_best_streak_days ?? 0}</strong>
+                  <span>best streak</span>
                 </div>
-                <p className="muted-copy">{stageChangeLabel(metricText(metrics, "garden_stage_change"))}</p>
-                <p className="muted-copy">{`Biggest completed win: ${metricText(metrics, "biggest_completed_task") ?? "No completed task title available."}`}</p>
+                <div>
+                  <strong>{recap.streak_summary?.longest_streak_days ?? 0}</strong>
+                  <span>longest streak</span>
+                </div>
+                <div>
+                  <strong>{recap.streak_summary?.current_streak_days ?? 0}</strong>
+                  <span>current streak</span>
+                </div>
               </div>
             </section>
           </section>

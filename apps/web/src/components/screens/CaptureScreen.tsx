@@ -4,28 +4,23 @@ import { formatDate, toApiDate, toDateInputValue } from "../../features/tasks/ta
 import type {
   ConfirmExtractionCandidateInput,
   CreateEntryInput,
-  CreateTaskInput,
   ExtractionBatch,
   ExtractionCandidate,
   ExtractionCandidateDecision,
-  Project,
   RawEntry,
   TaskEffort,
   TaskEnergy,
   TaskPriority,
-  TaskStatus,
   TranscriptionResult,
 } from "../../lib/types";
 
 type CaptureScreenProps = {
   entries: RawEntry[];
-  projects: Project[];
   activeExtraction: ExtractionBatch | null;
   latestTranscription: TranscriptionResult | null;
   extractionNotice: string | null;
-  onCreateEntry: (payload: CreateEntryInput) => Promise<void>;
+  onCreateEntry: (payload: CreateEntryInput) => Promise<RawEntry>;
   onTranscribeAudio: (audioBlob: Blob, fileName?: string) => Promise<TranscriptionResult>;
-  onCreateTask: (payload: CreateTaskInput) => Promise<void>;
   onRunExtract: (entryId: string) => Promise<void>;
   onConfirmExtraction: (extractionId: string, candidates: ConfirmExtractionCandidateInput[]) => Promise<void>;
   onArchiveEntry: (entryId: string) => Promise<void>;
@@ -42,7 +37,25 @@ type RecordingState = "idle" | "recording" | "ready" | "transcribing";
 const priorityOptions: TaskPriority[] = ["low", "medium", "high", "critical"];
 const effortOptions: TaskEffort[] = ["small", "medium", "large"];
 const energyOptions: TaskEnergy[] = ["low", "medium", "high"];
-const statusOptions: TaskStatus[] = ["inbox", "planned", "in_progress", "blocked"];
+
+function MicIcon(): JSX.Element {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+      <path d="M12 14.5a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5.5a3 3 0 0 0 3 3Z" />
+      <path d="M18 11.5a6 6 0 0 1-12 0" />
+      <path d="M12 17.5V21" />
+      <path d="M8.5 21h7" />
+    </svg>
+  );
+}
+
+function StopIcon(): JSX.Element {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+      <rect x="8" y="8" width="8" height="8" rx="1.5" />
+    </svg>
+  );
+}
 
 function candidateToDraft(candidate: ExtractionCandidate): ReviewDraft {
   return {
@@ -55,34 +68,24 @@ function candidateToDraft(candidate: ExtractionCandidate): ReviewDraft {
 
 export function CaptureScreen({
   entries,
-  projects,
   activeExtraction,
   latestTranscription,
   extractionNotice,
   onCreateEntry,
   onTranscribeAudio,
-  onCreateTask,
   onRunExtract,
   onConfirmExtraction,
   onArchiveEntry,
 }: CaptureScreenProps): JSX.Element {
   const [rawText, setRawText] = useState("");
   const [sourceType, setSourceType] = useState<"typed" | "pasted">("typed");
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskDetails, setTaskDetails] = useState("");
-  const [taskProjectId, setTaskProjectId] = useState("");
-  const [taskDueDate, setTaskDueDate] = useState("");
-  const [taskStatus, setTaskStatus] = useState<TaskStatus>("inbox");
-  const [taskPriority, setTaskPriority] = useState<TaskPriority>("medium");
-  const [taskEffort, setTaskEffort] = useState<TaskEffort>("medium");
-  const [taskEnergy, setTaskEnergy] = useState<TaskEnergy>("medium");
+  const [savedEntry, setSavedEntry] = useState<RawEntry | null>(null);
   const [reviewDrafts, setReviewDrafts] = useState<ReviewDraft[]>([]);
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
   const [micLevel, setMicLevel] = useState(0.12);
-  const [showManualTask, setShowManualTask] = useState(false);
   const [showRecentNotes, setShowRecentNotes] = useState(false);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -164,30 +167,10 @@ export function CaptureScreen({
 
   async function handleSaveEntry(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    await onCreateEntry({ source_type: sourceType, raw_text: rawText });
+    const entry = await onCreateEntry({ source_type: sourceType, raw_text: rawText });
+    setSavedEntry(entry);
     setRawText("");
-  }
-
-  async function handleCreateTask(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    await onCreateTask({
-      title: taskTitle,
-      details: taskDetails || undefined,
-      project_id: taskProjectId || undefined,
-      due_date: toApiDate(taskDueDate),
-      status: taskStatus,
-      priority: taskPriority,
-      effort: taskEffort,
-      energy: taskEnergy,
-    });
-    setTaskTitle("");
-    setTaskDetails("");
-    setTaskProjectId("");
-    setTaskDueDate("");
-    setTaskStatus("inbox");
-    setTaskPriority("medium");
-    setTaskEffort("medium");
-    setTaskEnergy("medium");
+    setSourceType("typed");
   }
 
   async function handleConfirmReview(): Promise<void> {
@@ -276,7 +259,12 @@ export function CaptureScreen({
     setRecordingState("transcribing");
     try {
       await onTranscribeAudio(audioBlob, `task-garden-${Date.now()}.webm`);
-      setRecordingState("ready");
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+      setAudioBlob(null);
+      setAudioUrl(null);
+      setRecordingState("idle");
     } catch (error) {
       setRecordingState("ready");
       setMicError(error instanceof Error ? error.message : "Transcription failed.");
@@ -289,39 +277,16 @@ export function CaptureScreen({
 
   return (
     <section className="workspace">
-      <div className="hero-card hero-card--capture">
-        <div>
-          <p className="section-eyebrow">Capture</p>
-          <h3>Get the thought out first. Shape it when you have the energy.</h3>
-        </div>
-      </div>
-
       {extractionNotice ? <div className="info-banner">{extractionNotice}</div> : null}
       {micError ? <div className="error-banner">{micError}</div> : null}
 
-      <div className="screen-grid screen-grid--capture screen-grid--capture-focus">
+      <div className="screen-grid screen-grid--capture">
         <form className="surface-panel surface-panel--composer" onSubmit={handleSaveEntry}>
           <div className="composer-shell">
             <div className="composer-shell__header">
               <div>
                 <p className="section-eyebrow">Composer</p>
-                <h4>Type or speak in one place</h4>
-              </div>
-              <div className="chip-row">
-                <button
-                  className={`toggle-chip${sourceType === "typed" ? " toggle-chip--active" : ""}`}
-                  type="button"
-                  onClick={() => setSourceType("typed")}
-                >
-                  Typed
-                </button>
-                <button
-                  className={`toggle-chip${sourceType === "pasted" ? " toggle-chip--active" : ""}`}
-                  type="button"
-                  onClick={() => setSourceType("pasted")}
-                >
-                  Pasted
-                </button>
+                <h4>Talk it out or jot it down.</h4>
               </div>
             </div>
 
@@ -330,7 +295,8 @@ export function CaptureScreen({
                 className="composer-input__textarea"
                 value={rawText}
                 onChange={(event) => setRawText(event.target.value)}
-                placeholder="Dump the note in plain language, or tap the mic and talk it through."
+                onPaste={() => setSourceType("pasted")}
+                placeholder="Speak naturally, or write a quick note."
                 rows={8}
               />
               <button
@@ -340,7 +306,7 @@ export function CaptureScreen({
                 disabled={recordingState === "transcribing"}
                 aria-label={recordingState === "recording" ? "Stop recording" : "Start recording"}
               >
-                {recordingState === "recording" ? "Stop" : "Mic"}
+                {recordingState === "recording" ? <StopIcon /> : <MicIcon />}
               </button>
             </div>
 
@@ -361,8 +327,8 @@ export function CaptureScreen({
                     {recordingState === "transcribing" ? "Transcribing..." : "Transcribe"}
                   </button>
                 ) : null}
-                <button className="primary-button" type="submit" disabled={!rawText.trim()}>
-                  Save Note
+                <button className="secondary-button" type="submit" disabled={!rawText.trim()}>
+                  Save transcript
                 </button>
               </div>
             </div>
@@ -389,8 +355,27 @@ export function CaptureScreen({
                 </div>
                 <p>{latestTranscription.raw_entry.raw_text}</p>
                 <div className="form-actions">
-                  <span className="helper-text">Nothing turns into a task until you review it.</span>
+                  <span className="helper-text">Ready for review.</span>
                   <button className="primary-button" type="button" onClick={() => void onRunExtract(latestTranscription.raw_entry.id)}>
+                    Extract Tasks
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {savedEntry && savedEntry.id !== latestTranscription?.raw_entry.id ? (
+              <div className="transcript-preview transcript-preview--saved">
+                <div className="transcript-preview__header">
+                  <div>
+                    <p className="section-eyebrow">Saved note</p>
+                    <strong>Ready for task suggestions</strong>
+                  </div>
+                  <span className="meta-chip">{formatDate(savedEntry.created_at)}</span>
+                </div>
+                <p>{savedEntry.raw_text}</p>
+                <div className="form-actions">
+                  <span className="helper-text">Ready for review.</span>
+                  <button className="primary-button" type="button" onClick={() => void onRunExtract(savedEntry.id)}>
                     Extract Tasks
                   </button>
                 </div>
@@ -399,112 +384,13 @@ export function CaptureScreen({
           </div>
         </form>
 
-        <section className={`surface-panel manual-task-panel${showManualTask ? " manual-task-panel--open" : ""}`}>
-          <div className="surface-panel__header">
-            <div>
-              <p className="section-eyebrow">Manual</p>
-              <h4>Add a task directly</h4>
-            </div>
-            <button className="secondary-button secondary-button--ghost" type="button" onClick={() => setShowManualTask((value) => !value)}>
-              {showManualTask ? "Hide" : "Add manually"}
-            </button>
-          </div>
-
-          {showManualTask ? <form onSubmit={handleCreateTask}>
-            <div className="form-grid">
-              <label className="field field--full">
-                <span>Title</span>
-                <input value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} required />
-              </label>
-
-              <label className="field field--full">
-                <span>Details</span>
-                <textarea
-                  className="text-area text-area--compact"
-                  value={taskDetails}
-                  onChange={(event) => setTaskDetails(event.target.value)}
-                  rows={4}
-                  placeholder="Optional context."
-                />
-              </label>
-
-              <label className="field">
-                <span>Project</span>
-                <select value={taskProjectId} onChange={(event) => setTaskProjectId(event.target.value)}>
-                  <option value="">No project</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="field">
-                <span>Due date</span>
-                <input type="date" value={taskDueDate} onChange={(event) => setTaskDueDate(event.target.value)} />
-              </label>
-
-              <label className="field">
-                <span>Status</span>
-                <select value={taskStatus} onChange={(event) => setTaskStatus(event.target.value as TaskStatus)}>
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="field">
-                <span>Priority</span>
-                <select value={taskPriority} onChange={(event) => setTaskPriority(event.target.value as TaskPriority)}>
-                  {priorityOptions.map((priority) => (
-                    <option key={priority} value={priority}>
-                      {priority}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="field">
-                <span>Effort</span>
-                <select value={taskEffort} onChange={(event) => setTaskEffort(event.target.value as TaskEffort)}>
-                  {effortOptions.map((effort) => (
-                    <option key={effort} value={effort}>
-                      {effort}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="field">
-                <span>Energy</span>
-                <select value={taskEnergy} onChange={(event) => setTaskEnergy(event.target.value as TaskEnergy)}>
-                  {energyOptions.map((energy) => (
-                    <option key={energy} value={energy}>
-                      {energy}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="form-actions">
-              <span className="helper-text">Useful when you already know the task shape.</span>
-              <button className="primary-button" type="submit">
-                Create Task
-              </button>
-            </div>
-          </form> : <p className="muted-copy">Keep capture focused. Open this when you already know the exact task.</p>}
-        </section>
       </div>
 
       <section className="surface-panel">
         <div className="surface-panel__header">
           <div>
-            <p className="section-eyebrow">Recent notes</p>
-            <h4>{entries.length} preserved {entries.length === 1 ? "note" : "notes"}</h4>
+            <p className="section-eyebrow">Recordings and Transcripts</p>
+            <h4>{entries.length} saved {entries.length === 1 ? "entry" : "entries"}</h4>
           </div>
           <button className="secondary-button secondary-button--ghost" type="button" onClick={() => setShowRecentNotes((value) => !value)}>
             {showRecentNotes ? "Collapse" : "Show"}
@@ -526,12 +412,12 @@ export function CaptureScreen({
                   Extract Tasks
                 </button>
                 <button className="secondary-button secondary-button--ghost" type="button" onClick={() => void onArchiveEntry(entry.id)}>
-                  Remove
+                  Archive
                 </button>
               </div>
             </article>
           ))}
-        </div> : <p className="muted-copy">Notes stay preserved without taking over the capture screen.</p>}
+        </div> : <p className="muted-copy">Saved transcripts stay here when you need them.</p>}
       </section>
 
       {activeExtraction ? (
@@ -549,8 +435,8 @@ export function CaptureScreen({
           </div>
 
           <div className="review-callout">
-            <strong>Still just suggestions.</strong>
-            <span>Edit, reject, or confirm only what belongs in your task list.</span>
+            <strong>Review first.</strong>
+            <span>Edit or reject anything that does not belong.</span>
           </div>
 
           <div className="review-list">
@@ -664,7 +550,7 @@ export function CaptureScreen({
           </div>
 
           <div className="form-actions">
-            <span className="helper-text">Only confirmed items become real tasks.</span>
+            <span className="helper-text">Selected items become tasks.</span>
             <button
               className="primary-button"
               type="button"

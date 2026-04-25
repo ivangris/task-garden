@@ -56,10 +56,9 @@ Make the app useful without audio or the garden.
 - confirm-and-save flow
 - task persistence
 - Inbox view
-- Today view
-- This Week view
+- Tasks view with Today, This week, Overdue, and Completed filters
 - Projects view
-- Completed view
+- Completed task history through task filters
 - search and filters
 - activity event logging
 

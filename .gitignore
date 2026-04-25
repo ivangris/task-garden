@@ -38,6 +38,9 @@ data/sqlite/*.db-wal
 data/sqlite/*.sqlite-shm
 data/sqlite/*.sqlite-wal
 runtime-logs/
+output/playwright/
+output/playwright-report/
+test-results/
 .tmp-art-preview/
 kenney_*.zip
 tools/whisper.cpp/

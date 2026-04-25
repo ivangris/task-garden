@@ -313,6 +313,7 @@ button {
 
 .screen-grid--capture {
   align-items: start;
+  grid-template-columns: 1fr;
 }
 
 .screen-grid--capture-focus {
@@ -427,6 +428,13 @@ button {
   color: var(--shell-info);
 }
 
+.info-banner--global {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
 .recording-pill {
   display: inline-flex;
   align-items: center;
@@ -478,6 +486,15 @@ button {
 
 .secondary-button--ghost {
   background: transparent;
+}
+
+.danger-button {
+  border: 1px solid rgba(201, 121, 107, 0.48);
+  border-radius: 999px;
+  padding: 0.72rem 1rem;
+  background: rgba(201, 121, 107, 0.14);
+  color: #f0b8a6;
+  font-weight: 700;
 }
 
 .primary-button:hover,
@@ -598,6 +615,24 @@ button {
 
 .entry-card--stack {
   flex-direction: column;
+}
+
+.project-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.project-edit-form,
+.project-delete-panel {
+  width: 100%;
+}
+
+.project-delete-panel {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--shell-border);
 }
 
 .entry-card__actions {
@@ -767,9 +802,9 @@ button {
 .task-table__head,
 .task-row {
   display: grid;
-  grid-template-columns: minmax(0, 2.4fr) 0.9fr 0.95fr 1.1fr 0.8fr;
+  grid-template-columns: minmax(260px, 2.4fr) minmax(130px, 0.75fr) minmax(150px, 0.9fr) minmax(150px, 0.95fr) minmax(110px, 0.65fr);
   gap: 0.75rem;
-  align-items: center;
+  align-items: start;
 }
 
 .task-table__head {
@@ -781,10 +816,20 @@ button {
 }
 
 .task-row {
-  padding: 0.9rem 0.75rem;
+  padding: 0.85rem 0.85rem;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.task-row--completed {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--shell-accent-moss) 9%, transparent), transparent 42%),
+    rgba(255, 255, 255, 0.025);
+}
+
+.task-row--archived {
+  opacity: 0.66;
 }
 
 .task-row__main {
@@ -809,6 +854,32 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+}
+
+.task-row__dates {
+  color: var(--shell-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.task-row__actions {
+  align-items: flex-start;
+}
+
+.task-row .chip-row {
+  gap: 0.35rem;
+}
+
+.task-row .meta-chip {
+  padding: 0.22rem 0.46rem;
+  font-size: 0.72rem;
+}
+
+.meta-chip--priority-high,
+.meta-chip--priority-critical {
+  border-color: rgba(230, 174, 110, 0.18);
+  background: rgba(230, 174, 110, 0.1);
+  color: #f1d5ac;
 }
 
 .empty-state {
@@ -887,9 +958,8 @@ button {
 }
 
 .composer-input {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.9rem;
+  position: relative;
+  display: block;
   padding: 0.95rem;
   border-radius: 24px;
   border: 1px solid var(--shell-border);
@@ -907,7 +977,8 @@ button {
   min-height: 210px;
   border: 0;
   resize: none;
-  padding: 0.2rem 0;
+  width: 100%;
+  padding: 0.2rem 0 4.2rem;
   background: transparent;
 }
 
@@ -916,13 +987,35 @@ button {
 }
 
 .composer-mic-button {
-  align-self: end;
-  min-width: 5.2rem;
-  height: 3rem;
+  position: absolute;
+  left: 50%;
+  bottom: 0.85rem;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.3rem;
+  height: 3.3rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   color: var(--shell-text);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.composer-mic-button svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.composer-mic-button svg rect {
+  fill: currentColor;
+  stroke: none;
 }
 
 .composer-mic-button--recording {
@@ -971,7 +1064,8 @@ button {
 .garden-renderer {
   position: relative;
   overflow: hidden;
-  min-height: 520px;
+  min-height: 560px;
+  padding: 1rem;
   border-radius: 28px;
   border: 1px solid var(--shell-border);
   background:
@@ -1026,33 +1120,30 @@ button {
 }
 
 .garden-renderer__meta {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
+  position: relative;
   z-index: 5;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.45rem;
-  max-width: 65%;
+  max-width: none;
 }
 
-.garden-renderer__footer {
-  position: absolute;
-  right: 1rem;
-  bottom: 0.9rem;
+.garden-renderer__legend {
+  position: relative;
   z-index: 4;
-  max-width: 320px;
-  text-align: right;
-}
-
-.garden-renderer__footer p {
-  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+  color: var(--shell-text-muted);
+  font-size: 0.82rem;
 }
 
 .garden-scene {
   position: relative;
-  margin: 2.8rem auto 1rem;
+  margin: 1rem auto 0.5rem;
   max-width: 100%;
   transform-origin: top center;
 }
@@ -1073,6 +1164,7 @@ button {
   position: absolute;
   z-index: 6;
   transform: translateX(-50%);
+  pointer-events: none;
 }
 
 .garden-zone-label span {
@@ -1091,13 +1183,13 @@ button {
 .garden-tile {
   position: absolute;
   width: 112px;
-  height: 128px;
+  height: 112px;
 }
 
 .garden-tile__diamond {
   position: relative;
   width: 112px;
-  height: 128px;
+  height: 112px;
 }
 
 .garden-tile__fallback {
@@ -1199,7 +1291,8 @@ button {
   transform: translateX(-50%);
   pointer-events: none;
   image-rendering: auto;
-  filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.2));
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.18));
+  opacity: 0.94;
 }
 
 .garden-plant,
@@ -1230,7 +1323,7 @@ button {
 }
 
 .garden-plant {
-  bottom: 10px;
+  bottom: 22px;
 }
 
 .garden-plant--sprout {
@@ -1271,7 +1364,32 @@ button {
 }
 
 .garden-decoration {
-  bottom: 0;
+  bottom: 16px;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 0.62rem;
+  height: 0.62rem;
+  margin-right: 0.28rem;
+  border-radius: 50%;
+  vertical-align: -0.04rem;
+}
+
+.legend-dot--desert {
+  background: #b98955;
+}
+
+.legend-dot--recovering {
+  background: #98a66d;
+}
+
+.legend-dot--healthy {
+  background: #5d9f6d;
+}
+
+.legend-dot--lush {
+  background: #35a66f;
 }
 
 .garden-decoration--path {
@@ -1592,11 +1710,11 @@ button {
   }
 
   .composer-input {
-    grid-template-columns: 1fr;
+    min-height: 220px;
   }
 
   .composer-mic-button {
-    align-self: start;
+    bottom: 0.75rem;
   }
 
   .garden-renderer {

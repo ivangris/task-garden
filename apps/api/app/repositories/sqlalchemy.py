@@ -667,6 +667,14 @@ class SqlAlchemyTaskRepository:
         model = self.session.get(TaskModel, task_id)
         return _task_from_model(model) if model else None
 
+    def list_by_project(self, project_id: str) -> list[Task]:
+        models = self.session.scalars(
+            select(TaskModel)
+            .where(TaskModel.is_deleted.is_(False), TaskModel.project_id == project_id)
+            .order_by(TaskModel.created_at.desc())
+        ).all()
+        return [_task_from_model(model) for model in models]
+
     def list_active(self) -> list[Task]:
         models = self.session.scalars(
             select(TaskModel).where(TaskModel.is_deleted.is_(False), TaskModel.status != "completed").order_by(TaskModel.created_at.desc())

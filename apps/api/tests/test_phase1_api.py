@@ -170,6 +170,56 @@ class Phase1ApiTests(unittest.TestCase):
         finally:
             session.close()
 
+    def test_project_update_and_delete_can_keep_tasks_unassigned(self) -> None:
+        project = self.client.post("/projects", json={"name": "Atlas", "description": "Old"}).json()
+        task = self.client.post(
+            "/tasks",
+            json={
+                "title": "Draft plan",
+                "project_id": project["id"],
+                "status": "inbox",
+                "priority": "medium",
+                "effort": "small",
+                "energy": "medium",
+            },
+        ).json()
+
+        update_response = self.client.patch(f"/projects/{project['id']}", json={"name": "Atlas refreshed", "description": "New"})
+        self.assertEqual(update_response.status_code, 200)
+        self.assertEqual(update_response.json()["name"], "Atlas refreshed")
+
+        delete_response = self.client.delete(f"/projects/{project['id']}?task_mode=unassign")
+        self.assertEqual(delete_response.status_code, 200)
+        self.assertEqual(delete_response.json()["affected_task_count"], 1)
+
+        tasks_response = self.client.get("/tasks")
+        kept = next(item for item in tasks_response.json()["items"] if item["id"] == task["id"])
+        self.assertIsNone(kept["project_id"])
+
+        projects_response = self.client.get("/projects")
+        self.assertNotIn(project["id"], [item["id"] for item in projects_response.json()["items"]])
+
+    def test_project_delete_can_delete_associated_tasks(self) -> None:
+        project = self.client.post("/projects", json={"name": "Cleanup"}).json()
+        task = self.client.post(
+            "/tasks",
+            json={
+                "title": "Remove clutter",
+                "project_id": project["id"],
+                "status": "inbox",
+                "priority": "medium",
+                "effort": "small",
+                "energy": "medium",
+            },
+        ).json()
+
+        delete_response = self.client.delete(f"/projects/{project['id']}?task_mode=delete")
+        self.assertEqual(delete_response.status_code, 200)
+        self.assertEqual(delete_response.json()["affected_task_count"], 1)
+
+        tasks_response = self.client.get("/tasks")
+        self.assertNotIn(task["id"], [item["id"] for item in tasks_response.json()["items"]])
+
     def test_settings_patch_persists(self) -> None:
         patch_response = self.client.patch(
             "/settings",
@@ -360,6 +410,7 @@ class Phase1ApiTests(unittest.TestCase):
         payload = transcribe_response.json()
         self.assertEqual(payload["raw_entry"]["entry_status"], "transcribed")
         self.assertTrue(payload["raw_entry"]["raw_text"])
+        self.assertIsNone(payload["raw_entry"]["audio_file_ref"])
         self.assertEqual(payload["raw_entry"]["transcript_provider_name"], "local_stub")
         self.assertEqual(len(payload["segments"]), 1)
 
@@ -370,6 +421,8 @@ class Phase1ApiTests(unittest.TestCase):
             event_types = [event.event_type for event in SqlAlchemyActivityEventRepository(session).list_recent(limit=10)]
             self.assertIsNotNone(stored_entry)
             self.assertEqual(stored_entry.entry_status, "transcribed")
+            self.assertIsNone(stored_entry.audio_file_ref)
+            self.assertTrue(stored_entry.transcript_metadata["audio_discarded_after_transcription"])
             self.assertEqual(stored_entry.transcript_provider_name, "local_stub")
             self.assertEqual(len(stored_segments), 1)
             self.assertIn("transcription_started", event_types)

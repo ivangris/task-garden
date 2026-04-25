@@ -79,7 +79,7 @@ export function GardenRenderer({ overview, tilesPayload }: GardenRendererProps):
       <div className="garden-renderer__meta">
         <span className="meta-chip">{scene.stageKey.replace(/_/g, " ")}</span>
         <span className="meta-chip">health {scene.healthScore}%</span>
-        <span className="meta-chip">{scene.fountainState === "restored" ? "fountain restored" : "fountain broken"}</span>
+        <span className="meta-chip">{scene.fountainState === "restored" ? "fountain restored" : "fountain waiting"}</span>
       </div>
 
       <div className="garden-scene" style={gardenSceneStyle(scene)} aria-label="Garden scene">
@@ -137,10 +137,11 @@ export function GardenRenderer({ overview, tilesPayload }: GardenRendererProps):
         ))}
       </div>
 
-      <div className="garden-renderer__footer">
-        <p className="muted-copy">
-          Visible decay only appears when active work is overdue. Recovery comes from completed tasks and remains stronger than decay.
-        </p>
+      <div className="garden-renderer__legend">
+        <span><i className="legend-dot legend-dot--desert" /> Desert</span>
+        <span><i className="legend-dot legend-dot--recovering" /> Recovering</span>
+        <span><i className="legend-dot legend-dot--healthy" /> Healthy</span>
+        <span><i className="legend-dot legend-dot--lush" /> Lush</span>
       </div>
     </section>
   );

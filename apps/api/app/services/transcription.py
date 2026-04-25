@@ -74,6 +74,23 @@ def _normalize_segments(entry_id: str, transcript: TranscriptResult) -> list[Tra
     ]
 
 
+def _remove_audio_artifacts(audio_file_ref: str | None, transcript_metadata: dict[str, object]) -> None:
+    paths: set[Path] = set()
+    if audio_file_ref:
+        paths.add(Path(audio_file_ref))
+    transcribed_ref = transcript_metadata.get("transcribed_audio_ref")
+    if isinstance(transcribed_ref, str) and transcribed_ref:
+        paths.add(Path(transcribed_ref))
+
+    for path in paths:
+        try:
+            if path.exists() and path.is_file():
+                path.unlink()
+        except OSError:
+            # Storage cleanup should not block a successful transcript.
+            continue
+
+
 def transcribe_audio_entry(
     entry_id: str,
     *,
@@ -129,17 +146,26 @@ def transcribe_audio_entry(
         )
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Transcription failed: {exc}") from exc
 
+    _remove_audio_artifacts(entry.audio_file_ref, transcript.metadata)
+
     entry.raw_text = transcript.text.strip()
+    entry.audio_file_ref = None
     entry.entry_status = "transcribed"
     entry.updated_at = utcnow()
     entry.transcript_provider_name = transcript.provider_name or provider.name
     entry.transcript_model_name = transcript.model_name or settings.stt_model
+    durable_metadata = {
+        key: value
+        for key, value in transcript.metadata.items()
+        if key not in {"audio_ref", "audio_file_ref", "transcribed_audio_ref"}
+    }
     entry.transcript_metadata = {
-        **transcript.metadata,
+        **durable_metadata,
         "file_name": file_name,
         "content_type": content_type,
         "audio_bytes": len(audio_bytes),
         "used_fallback": used_fallback,
+        "audio_discarded_after_transcription": True,
     }
     updated_entry = raw_entries.update(entry)
     saved_segments = transcript_segments.replace_for_entry(entry.id, _normalize_segments(entry.id, transcript))

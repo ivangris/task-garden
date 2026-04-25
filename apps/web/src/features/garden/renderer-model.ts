@@ -11,10 +11,10 @@ import {
 import type { GardenOverview, GardenTile, GardenTilesPayload } from "../../lib/types";
 
 const TILE_WIDTH = 112;
-const TILE_HEIGHT = 60;
-const TILE_DEPTH = 28;
-const SCENE_PADDING_X = 72;
-const SCENE_PADDING_Y = 72;
+const TILE_HEIGHT = 112;
+const TILE_DEPTH = 22;
+const SCENE_PADDING_X = 56;
+const SCENE_PADDING_Y = 64;
 
 type TileState = GardenTile["tile_state"];
 
@@ -69,8 +69,8 @@ export type GardenSceneModel = {
 };
 
 function buildRenderPosition(coordX: number, coordY: number): Pick<GardenRenderableTile, "screenX" | "screenY" | "zIndex"> {
-  const screenX = SCENE_PADDING_X + (coordX - coordY) * (TILE_WIDTH / 2) + coordY * 28;
-  const screenY = SCENE_PADDING_Y + (coordX + coordY) * (TILE_HEIGHT / 2);
+  const screenX = SCENE_PADDING_X + coordX * 124 + (coordY % 2) * 54;
+  const screenY = SCENE_PADDING_Y + coordY * 88;
   return {
     screenX,
     screenY,

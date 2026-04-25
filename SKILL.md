@@ -244,10 +244,8 @@ Task views should feel efficient and composed.
 
 Primary views:
 - Inbox
-- Today
-- This Week
+- Tasks
 - Projects
-- Completed
 
 Design goals:
 - fast scanability
