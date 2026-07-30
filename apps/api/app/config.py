@@ -5,9 +5,18 @@ from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-BASE_DIR = Path(__file__).resolve().parents[3]
+def _resolve_base_dir() -> Path:
+    path = Path(__file__).resolve()
+    parents = path.parents
+    if len(parents) > 3:
+        return parents[3]
+    return parents[1]
+
+
+BASE_DIR = _resolve_base_dir()
 DEFAULT_SQLITE_URL = f"sqlite:///{(BASE_DIR / 'data' / 'sqlite' / 'task-garden.db').as_posix()}"
 DEFAULT_AUDIO_DIR = str((BASE_DIR / "data" / "audio").resolve())
+DEFAULT_CORS_ORIGINS = "http://127.0.0.1:5173,http://127.0.0.1:15173,http://localhost:5173,http://localhost:15173"
 
 
 class ProviderSettings(BaseModel):
@@ -26,6 +35,10 @@ class Settings(BaseSettings):
     api_host: str = "127.0.0.1"
     api_port: int = 8000
     database_url: str = Field(default=DEFAULT_SQLITE_URL)
+    cors_allowed_origins: str = DEFAULT_CORS_ORIGINS
+    hosted_mode: bool = False
+    single_user_auth_token: str | None = None
+    logging_level: str = "INFO"
     local_only_mode: bool = True
     cloud_enabled: bool = False
     auto_configure_local_defaults: bool = True
@@ -46,6 +59,14 @@ class Settings(BaseSettings):
     audio_storage_dir: str = DEFAULT_AUDIO_DIR
     stt_executable_path: str | None = None
     stt_model_path: str | None = None
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
+
+    @property
+    def write_auth_required(self) -> bool:
+        return self.hosted_mode or self.auth_provider in {"bearer_token", "single_user_token"}
 
 
 @lru_cache(maxsize=1)

@@ -32,9 +32,8 @@ export function ProjectsScreen({ projects, tasks, onCreateProject, onUpdateProje
     setEditDescription(project.description ?? "");
   }
 
-  async function handleUpdateProject(event: FormEvent<HTMLFormElement>, projectId: string): Promise<void> {
-    event.preventDefault();
-    await onUpdateProject(projectId, { name: editName, description: editDescription });
+  async function handleUpdateProject(projectId: string): Promise<void> {
+    await onUpdateProject(projectId, { name: editName.trim(), description: editDescription.trim() || undefined });
     setEditingProjectId(null);
     setEditName("");
     setEditDescription("");
@@ -54,13 +53,6 @@ export function ProjectsScreen({ projects, tasks, onCreateProject, onUpdateProje
 
   return (
     <section className="workspace">
-      <div className="hero-card hero-card--compact">
-        <div>
-          <p className="section-eyebrow">Projects</p>
-          <h3>Group work without adding clutter.</h3>
-        </div>
-      </div>
-
       <div className="screen-grid">
         <form className="surface-panel" onSubmit={handleSubmit}>
           <div className="surface-panel__header">
@@ -110,7 +102,7 @@ export function ProjectsScreen({ projects, tasks, onCreateProject, onUpdateProje
               return (
                 <article key={project.id} className="project-card">
                   {editingProjectId === project.id ? (
-                    <form className="project-edit-form" onSubmit={(event) => void handleUpdateProject(event, project.id)}>
+                    <div className="project-edit-form">
                       <label className="field field--full">
                         <span>Name</span>
                         <input value={editName} onChange={(event) => setEditName(event.target.value)} required />
@@ -128,11 +120,11 @@ export function ProjectsScreen({ projects, tasks, onCreateProject, onUpdateProje
                         <button className="secondary-button secondary-button--ghost" type="button" onClick={() => setEditingProjectId(null)}>
                           Cancel
                         </button>
-                        <button className="primary-button primary-button--small" type="submit">
+                        <button className="primary-button primary-button--small" type="button" onClick={() => void handleUpdateProject(project.id)} disabled={!editName.trim()}>
                           Save
                         </button>
                       </div>
-                    </form>
+                    </div>
                   ) : (
                     <>
                       <div>

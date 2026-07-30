@@ -10,6 +10,15 @@ All request and response models should be defined using Pydantic schemas.
 
 ## General conventions
 
+### Hosted single-user auth
+Local development is unauthenticated by default. When `TASK_GARDEN_HOSTED_MODE=true` or `TASK_GARDEN_AUTH_PROVIDER=bearer_token`, mutating requests must include:
+
+```text
+Authorization: Bearer <single-user-token>
+```
+
+Read endpoints such as `GET /health` remain available for health checks. This is a private single-user boundary, not account management.
+
 ### Response principles
 - return structured JSON
 - include stable identifiers

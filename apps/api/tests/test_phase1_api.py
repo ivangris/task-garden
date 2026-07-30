@@ -75,6 +75,10 @@ class Phase1ApiTests(unittest.TestCase):
         os.environ.pop("TASK_GARDEN_OLLAMA_BASE_URL", None)
         os.environ.pop("TASK_GARDEN_EXTRACTION_MODEL", None)
         os.environ.pop("TASK_GARDEN_AUTO_CONFIGURE_LOCAL_DEFAULTS", None)
+        os.environ.pop("TASK_GARDEN_HOSTED_MODE", None)
+        os.environ.pop("TASK_GARDEN_SINGLE_USER_AUTH_TOKEN", None)
+        os.environ.pop("TASK_GARDEN_AUTH_PROVIDER", None)
+        os.environ.pop("TASK_GARDEN_CORS_ALLOWED_ORIGINS", None)
         self.temp_dir.cleanup()
 
     def make_ollama_response(self, content: str, *, model: str = "llama3.1:8b", status_code: int = 200) -> httpx.Response:
@@ -112,6 +116,38 @@ class Phase1ApiTests(unittest.TestCase):
             self.assertEqual(events[0].entity_type, "raw_entry")
         finally:
             session.close()
+
+    def test_hosted_mode_requires_bearer_token_for_writes(self) -> None:
+        os.environ["TASK_GARDEN_HOSTED_MODE"] = "true"
+        os.environ["TASK_GARDEN_SINGLE_USER_AUTH_TOKEN"] = "test-hosted-token"
+        os.environ["TASK_GARDEN_AUTH_PROVIDER"] = "bearer_token"
+        self.rebuild_client()
+
+        health_response = self.client.get("/health")
+        self.assertEqual(health_response.status_code, 200)
+
+        unauthorized_response = self.client.post(
+            "/entries",
+            json={"source_type": "typed", "raw_text": "This write should be blocked"},
+        )
+        self.assertEqual(unauthorized_response.status_code, 401)
+
+        authorized_response = self.client.post(
+            "/entries",
+            json={"source_type": "typed", "raw_text": "This write should be accepted"},
+            headers={"Authorization": "Bearer test-hosted-token"},
+        )
+        self.assertEqual(authorized_response.status_code, 201)
+
+    def test_hosted_mode_denies_writes_when_token_is_not_configured(self) -> None:
+        os.environ["TASK_GARDEN_HOSTED_MODE"] = "true"
+        os.environ["TASK_GARDEN_AUTH_PROVIDER"] = "bearer_token"
+        os.environ.pop("TASK_GARDEN_SINGLE_USER_AUTH_TOKEN", None)
+        self.rebuild_client()
+
+        response = self.client.post("/entries", json={"source_type": "typed", "raw_text": "Missing server token"})
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("TASK_GARDEN_SINGLE_USER_AUTH_TOKEN", response.json()["detail"])
 
     def test_archived_entry_is_removed_from_recent_entries(self) -> None:
         entry = self.client.post("/entries", json={"source_type": "typed", "raw_text": "Temporary note"}).json()

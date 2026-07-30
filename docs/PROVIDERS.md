@@ -50,7 +50,8 @@ Used only once hosted sync is enabled.
 
 #### Implementations
 - `NoAuthProvider`
-- future hosted auth provider
+- single-user hosted bearer-token boundary in `app.security`
+- future full hosted auth provider if the product expands beyond private single-user use
 
 ## STTProvider contract
 

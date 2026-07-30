@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { PromptInputBox } from "../ui/ai-prompt-box";
 import { formatDate, toApiDate, toDateInputValue } from "../../features/tasks/task-utils";
 import type {
   ConfirmExtractionCandidateInput,
@@ -38,25 +39,6 @@ const priorityOptions: TaskPriority[] = ["low", "medium", "high", "critical"];
 const effortOptions: TaskEffort[] = ["small", "medium", "large"];
 const energyOptions: TaskEnergy[] = ["low", "medium", "high"];
 
-function MicIcon(): JSX.Element {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-      <path d="M12 14.5a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5.5a3 3 0 0 0 3 3Z" />
-      <path d="M18 11.5a6 6 0 0 1-12 0" />
-      <path d="M12 17.5V21" />
-      <path d="M8.5 21h7" />
-    </svg>
-  );
-}
-
-function StopIcon(): JSX.Element {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-      <rect x="8" y="8" width="8" height="8" rx="1.5" />
-    </svg>
-  );
-}
-
 function candidateToDraft(candidate: ExtractionCandidate): ReviewDraft {
   return {
     ...candidate,
@@ -87,6 +69,7 @@ export function CaptureScreen({
   const [micError, setMicError] = useState<string | null>(null);
   const [micLevel, setMicLevel] = useState(0.12);
   const [showRecentNotes, setShowRecentNotes] = useState(false);
+  const [attachments, setAttachments] = useState<Array<{ id: string; name: string; size: number }>>([]);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -94,6 +77,7 @@ export function CaptureScreen({
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const pendingAudioUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     setReviewDrafts(activeExtraction?.candidates.map(candidateToDraft) ?? []);
@@ -118,11 +102,6 @@ export function CaptureScreen({
     () => reviewDrafts.filter((candidate) => candidate.decision === "accepted").length,
     [reviewDrafts],
   );
-
-  const waveformBars = Array.from({ length: 14 }, (_, index) => {
-    const swing = Math.sin(index * 0.9 + micLevel * 8);
-    return Math.max(0.22, Math.min(1, micLevel * 1.2 + (swing + 1) * 0.18));
-  });
 
   function stopAudioMonitoring(): void {
     if (animationFrameRef.current) {
@@ -165,12 +144,15 @@ export function CaptureScreen({
     animationFrameRef.current = requestAnimationFrame(tick);
   }
 
-  async function handleSaveEntry(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
+  async function handleSaveAndExtract(): Promise<void> {
+    if (!rawText.trim()) {
+      return;
+    }
     const entry = await onCreateEntry({ source_type: sourceType, raw_text: rawText });
     setSavedEntry(entry);
-    setRawText("");
     setSourceType("typed");
+    setAttachments([]);
+    await onRunExtract(entry.id);
   }
 
   async function handleConfirmReview(): Promise<void> {
@@ -237,10 +219,12 @@ export function CaptureScreen({
       recorder.addEventListener("stop", () => {
         const nextBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || "audio/webm" });
         setAudioBlob(nextBlob);
-        setAudioUrl(URL.createObjectURL(nextBlob));
-        setRecordingState("ready");
+        const nextUrl = URL.createObjectURL(nextBlob);
+        pendingAudioUrlRef.current = nextUrl;
+        setAudioUrl(nextUrl);
         stream.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
+        void handleTranscribeRecording(nextBlob, nextUrl);
       });
 
       startAudioMonitoring(stream);
@@ -252,16 +236,21 @@ export function CaptureScreen({
     }
   }
 
-  async function handleTranscribeRecording(): Promise<void> {
-    if (!audioBlob) {
+  async function handleTranscribeRecording(blob = audioBlob, blobUrl = audioUrl): Promise<void> {
+    if (!blob) {
       return;
     }
     setRecordingState("transcribing");
     try {
-      await onTranscribeAudio(audioBlob, `task-garden-${Date.now()}.webm`);
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
+      const result = await onTranscribeAudio(blob, `task-garden-${Date.now()}.webm`);
+      setRawText(result.raw_entry.raw_text);
+      setSourceType("pasted");
+      setSavedEntry(result.raw_entry);
+      await onRunExtract(result.raw_entry.id);
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
       }
+      pendingAudioUrlRef.current = null;
       setAudioBlob(null);
       setAudioUrl(null);
       setRecordingState("idle");
@@ -275,13 +264,24 @@ export function CaptureScreen({
     setReviewDrafts((current) => current.map((candidate) => (candidate.id === candidateId ? { ...candidate, ...updates } : candidate)));
   }
 
+  function handleAttachFiles(files: File[]): void {
+    setAttachments((current) => [
+      ...current,
+      ...files.map((file) => ({
+        id: `${file.name}-${file.lastModified}-${file.size}`,
+        name: file.name,
+        size: file.size,
+      })),
+    ]);
+  }
+
   return (
     <section className="workspace">
       {extractionNotice ? <div className="info-banner">{extractionNotice}</div> : null}
       {micError ? <div className="error-banner">{micError}</div> : null}
 
       <div className="screen-grid screen-grid--capture">
-        <form className="surface-panel surface-panel--composer" onSubmit={handleSaveEntry}>
+        <section className="surface-panel surface-panel--composer">
           <div className="composer-shell">
             <div className="composer-shell__header">
               <div>
@@ -290,48 +290,27 @@ export function CaptureScreen({
               </div>
             </div>
 
-            <div className={`composer-input${recordingState === "recording" ? " composer-input--recording" : ""}`}>
-              <textarea
-                className="composer-input__textarea"
-                value={rawText}
-                onChange={(event) => setRawText(event.target.value)}
-                onPaste={() => setSourceType("pasted")}
-                placeholder="Speak naturally, or write a quick note."
-                rows={8}
-              />
-              <button
-                className={`composer-mic-button${recordingState === "recording" ? " composer-mic-button--recording" : ""}`}
-                type="button"
-                onClick={() => void handleToggleRecording()}
-                disabled={recordingState === "transcribing"}
-                aria-label={recordingState === "recording" ? "Stop recording" : "Start recording"}
-              >
-                {recordingState === "recording" ? <StopIcon /> : <MicIcon />}
-              </button>
-            </div>
+            <PromptInputBox
+              value={rawText}
+              onValueChange={setRawText}
+              onSend={() => void handleSaveAndExtract()}
+              onToggleRecording={() => void handleToggleRecording()}
+              onTranscribeRecording={() => void handleTranscribeRecording()}
+              onAttachFiles={handleAttachFiles}
+              onRemoveAttachment={(id) => setAttachments((current) => current.filter((attachment) => attachment.id !== id))}
+              onPaste={() => setSourceType("pasted")}
+              attachments={attachments}
+              isRecording={recordingState === "recording"}
+              isLoading={recordingState === "transcribing"}
+              hasRecordingReady={Boolean(audioBlob)}
+              micLevel={micLevel}
+              placeholder="Speak naturally, or write a quick note."
+              sendLabel="Extract tasks"
+            />
 
-            <div className="composer-footer">
-              <div className={`wave-meter${recordingState === "recording" ? " wave-meter--active" : ""}`} aria-hidden="true">
-                {waveformBars.map((bar, index) => (
-                  <span key={index} style={{ transform: `scaleY(${bar})` }} />
-                ))}
-              </div>
-              <div className="composer-footer__actions">
-                {audioBlob ? (
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    onClick={() => void handleTranscribeRecording()}
-                    disabled={recordingState === "transcribing"}
-                  >
-                    {recordingState === "transcribing" ? "Transcribing..." : "Transcribe"}
-                  </button>
-                ) : null}
-                <button className="secondary-button" type="submit" disabled={!rawText.trim()}>
-                  Save transcript
-                </button>
-              </div>
-            </div>
+            {attachments.length > 0 ? (
+              <p className="helper-text">Attachments stay with this draft for now. Task extraction uses the transcript text.</p>
+            ) : null}
 
             {audioUrl ? (
               <div className="audio-preview">
@@ -353,13 +332,7 @@ export function CaptureScreen({
                     <span className="meta-chip">{formatDate(latestTranscription.raw_entry.created_at)}</span>
                   </div>
                 </div>
-                <p>{latestTranscription.raw_entry.raw_text}</p>
-                <div className="form-actions">
-                  <span className="helper-text">Ready for review.</span>
-                  <button className="primary-button" type="button" onClick={() => void onRunExtract(latestTranscription.raw_entry.id)}>
-                    Extract Tasks
-                  </button>
-                </div>
+                <p>Transcript is in the composer and ready to edit.</p>
               </div>
             ) : null}
 
@@ -373,16 +346,10 @@ export function CaptureScreen({
                   <span className="meta-chip">{formatDate(savedEntry.created_at)}</span>
                 </div>
                 <p>{savedEntry.raw_text}</p>
-                <div className="form-actions">
-                  <span className="helper-text">Ready for review.</span>
-                  <button className="primary-button" type="button" onClick={() => void onRunExtract(savedEntry.id)}>
-                    Extract Tasks
-                  </button>
-                </div>
               </div>
             ) : null}
           </div>
-        </form>
+        </section>
 
       </div>
 
@@ -557,7 +524,7 @@ export function CaptureScreen({
               onClick={() => void handleConfirmReview()}
               disabled={acceptedCount === 0 || !activeExtraction.needs_review}
             >
-              Confirm Selected Tasks
+              Add Tasks
             </button>
           </div>
         </section>

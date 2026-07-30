@@ -11,6 +11,7 @@ from app.db.base import Base
 from app.db.session import get_engine, get_session_factory
 from app.main import create_application
 from app.repositories.sqlalchemy import SqlAlchemyProjectRepository
+from app.services.sync import _should_apply
 
 
 FIXED_NOW = datetime(2026, 4, 19, 12, 0, tzinfo=UTC)
@@ -147,6 +148,12 @@ class SyncTests(unittest.TestCase):
     def test_pull_requires_registered_device(self) -> None:
         response = self.client.get("/sync/pull", params={"device_id": "missing-device"})
         self.assertEqual(response.status_code, 404)
+
+    def test_sync_timestamp_comparison_accepts_naive_and_aware_datetimes(self) -> None:
+        incoming = datetime(2026, 4, 19, 12, 5, tzinfo=UTC)
+        current = datetime(2026, 4, 19, 12, 0)
+
+        self.assertTrue(_should_apply(incoming, current))
 
 
 if __name__ == "__main__":

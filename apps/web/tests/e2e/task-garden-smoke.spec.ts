@@ -90,13 +90,11 @@ test("core local workflow smoke test", async ({ page, request }) => {
   await expect(page.getByRole("button", { name: /^Completed/ })).toHaveCount(0);
 
   await page.getByPlaceholder("Speak naturally, or write a quick note.").fill(names.typedNote);
-  await page.getByRole("button", { name: "Save transcript" }).click();
-  await expect(page.getByText("Ready for task suggestions")).toBeVisible();
-  await page.getByRole("button", { name: "Extract Tasks" }).first().click();
+  await page.getByRole("button", { name: "Extract tasks" }).click();
   await expect(page.getByRole("heading", { name: "Suggested tasks" })).toBeVisible();
-  await page.getByRole("button", { name: "Confirm Selected Tasks" }).click();
+  await page.getByRole("button", { name: "Add Tasks" }).click();
   await expect(page.getByText(/added to Inbox/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: /New tasks/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add manually" })).toBeVisible();
 
   await page.getByRole("button", { name: "Add manually" }).click();
   await page.getByLabel("Title").fill(names.manualTask);
@@ -116,10 +114,11 @@ test("core local workflow smoke test", async ({ page, request }) => {
   await dateFilter.selectOption("this_week");
   await expect(page.getByText(names.weekTask)).toBeVisible();
 
-  await dateFilter.selectOption("overdue");
+  await dateFilter.selectOption("all_active");
+  await page.getByLabel("Status").first().selectOption("overdue");
   await expect(page.getByText(names.overdueTask)).toBeVisible();
 
-  await dateFilter.selectOption("completed");
+  await page.getByLabel("Status").first().selectOption("completed");
   await expect(page.getByText(names.completedTask)).toBeVisible();
 
   await dateFilter.selectOption("all_active");
@@ -164,7 +163,7 @@ test("core local workflow smoke test", async ({ page, request }) => {
   await page.getByRole("button", { name: /^Recaps/ }).click();
   await expect(page.getByText("Completed").first()).toBeVisible();
   await page.getByRole("button", { name: /Refresh yearly/ }).click();
-  await expect(page.getByText("Garden Shift")).toBeVisible();
+  await expect(page.getByText("Garden").first()).toBeVisible();
 
   await page.getByRole("button", { name: /^Settings/ }).click();
   await expect(page.getByLabel("Extraction provider")).toBeVisible();

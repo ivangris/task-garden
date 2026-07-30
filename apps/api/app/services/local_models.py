@@ -7,13 +7,13 @@ import subprocess
 
 import httpx
 
-from app.config import Settings
+from app.config import BASE_DIR, Settings
 from app.providers.ollama_common import build_ollama_tags_url, normalize_ollama_base_url
 
 
 PREFERRED_CHAT_MODELS = ("gemma3:4b", "llama3.1:8b", "qwen2.5:7b")
 EMBEDDING_MODEL_MARKERS = ("embed", "embedding", "nomic-embed", "mxbai-embed", "bge-", "all-minilm")
-REPO_ROOT = Path(__file__).resolve().parents[4]
+REPO_ROOT = BASE_DIR
 PROJECT_WHISPER_EXECUTABLE = REPO_ROOT / "tools" / "whisper.cpp" / "bin" / "Release" / "whisper-cli.exe"
 PROJECT_WHISPER_MODEL = REPO_ROOT / "data" / "models" / "whisper" / "ggml-base.en.bin"
 

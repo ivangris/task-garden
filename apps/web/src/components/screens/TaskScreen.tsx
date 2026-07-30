@@ -22,20 +22,33 @@ type TaskScreenProps = {
 };
 
 const statusOptions: TaskStatus[] = ["inbox", "planned", "in_progress", "blocked", "completed", "archived"];
+const filterStatusOptions: { value: string; label: string }[] = [
+  { value: "all", label: "All Active" },
+  { value: "inbox", label: "Inbox" },
+  { value: "planned", label: "Planned" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "blocked", label: "Blocked" },
+  { value: "overdue", label: "Overdue" },
+  { value: "completed", label: "Completed" },
+  { value: "archived", label: "Archived" },
+];
 const priorityOptions: TaskPriority[] = ["low", "medium", "high", "critical"];
 const effortOptions: TaskEffort[] = ["small", "medium", "large"];
 const energyOptions: TaskEnergy[] = ["low", "medium", "high"];
 const dateRangeOptions: { value: TaskFilters["dateRange"]; label: string }[] = [
-  { value: "all_active", label: "All active" },
+  { value: "all_active", label: "All Dates" },
   { value: "today", label: "Today" },
-  { value: "this_week", label: "This week" },
-  { value: "overdue", label: "Overdue" },
-  { value: "completed", label: "Completed" },
+  { value: "this_week", label: "This Week" },
 ];
 
+function optionLabel(value: string): string {
+  return value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 export function TaskScreen({
-  title,
-  subtitle,
   tasks,
   projects,
   recommendations,
@@ -59,7 +72,6 @@ export function TaskScreen({
   const [taskPriority, setTaskPriority] = useState<TaskPriority>("medium");
   const [taskEffort, setTaskEffort] = useState<TaskEffort>("medium");
   const [taskEnergy, setTaskEnergy] = useState<TaskEnergy>("medium");
-  const completedCount = tasks.filter((task) => task.status === "completed").length;
 
   async function handleCreateTask(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -86,17 +98,6 @@ export function TaskScreen({
 
   return (
     <section className="workspace">
-      <div className="hero-card hero-card--compact">
-        <div>
-          <p className="section-eyebrow">{title}</p>
-          <h3>{subtitle}</h3>
-        </div>
-        <div className="hero-card__stats">
-          <span className="stat-pill">{tasks.length} visible</span>
-          {completedCount > 0 ? <span className="stat-pill">{completedCount} completed</span> : null}
-        </div>
-      </div>
-
       {allowManualCreate ? (
         <section className={`surface-panel manual-task-panel${showManualTask ? " manual-task-panel--open" : ""}`}>
           <div className="surface-panel__header">
@@ -146,10 +147,10 @@ export function TaskScreen({
 
                 <label className="field">
                   <span>Status</span>
-                  <select value={taskStatus} onChange={(event) => setTaskStatus(event.target.value as TaskStatus)}>
+              <select value={taskStatus} onChange={(event) => setTaskStatus(event.target.value as TaskStatus)}>
                     {statusOptions.filter((status) => status !== "archived").map((status) => (
                       <option key={status} value={status}>
-                        {status}
+                        {optionLabel(status)}
                       </option>
                     ))}
                   </select>
@@ -160,7 +161,7 @@ export function TaskScreen({
                   <select value={taskPriority} onChange={(event) => setTaskPriority(event.target.value as TaskPriority)}>
                     {priorityOptions.map((priority) => (
                       <option key={priority} value={priority}>
-                        {priority}
+                        {optionLabel(priority)}
                       </option>
                     ))}
                   </select>
@@ -171,7 +172,7 @@ export function TaskScreen({
                   <select value={taskEffort} onChange={(event) => setTaskEffort(event.target.value as TaskEffort)}>
                     {effortOptions.map((effort) => (
                       <option key={effort} value={effort}>
-                        {effort}
+                        {optionLabel(effort)}
                       </option>
                     ))}
                   </select>
@@ -182,7 +183,7 @@ export function TaskScreen({
                   <select value={taskEnergy} onChange={(event) => setTaskEnergy(event.target.value as TaskEnergy)}>
                     {energyOptions.map((energy) => (
                       <option key={energy} value={energy}>
-                        {energy}
+                        {optionLabel(energy)}
                       </option>
                     ))}
                   </select>
@@ -269,7 +270,6 @@ export function TaskScreen({
                   onFiltersChange({
                     ...filters,
                     dateRange: event.target.value as TaskFilters["dateRange"],
-                    status: event.target.value === "completed" ? "all" : filters.status,
                   })
                 }
               >
@@ -287,10 +287,9 @@ export function TaskScreen({
                 value={filters.status}
                 onChange={(event) => onFiltersChange({ ...filters, status: event.target.value })}
               >
-                <option value="all">All</option>
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
+                {filterStatusOptions.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
                   </option>
                 ))}
               </select>
@@ -318,7 +317,8 @@ export function TaskScreen({
             <span>Task</span>
             <span>Status</span>
             <span>Project</span>
-            <span>Dates</span>
+            <span>Created</span>
+            <span>Due</span>
             <span>Actions</span>
           </div>
 
@@ -341,7 +341,7 @@ export function TaskScreen({
                 <select value={task.status} onChange={(event) => onStatusChange(task.id, event.target.value as TaskStatus)}>
                   {statusOptions.map((status) => (
                     <option key={status} value={status}>
-                      {status}
+                      {optionLabel(status)}
                     </option>
                   ))}
                 </select>
@@ -362,8 +362,11 @@ export function TaskScreen({
               </div>
 
               <div className="task-row__dates">
-                <span>Created {formatDate(task.created_at)}</span>
-                {task.completed_at ? <span>Completed {formatDate(task.completed_at)}</span> : null}
+                <span>{formatDate(task.created_at)}</span>
+                {task.completed_at ? <small>Done {formatDate(task.completed_at)}</small> : null}
+              </div>
+
+              <div className="task-row__due">
                 <label className="field field--inline">
                   <span className="sr-only">Due date</span>
                   <input

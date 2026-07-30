@@ -60,13 +60,6 @@ export function SettingsScreen({
 
   return (
     <section className="workspace">
-      <div className="hero-card hero-card--compact">
-        <div>
-          <p className="section-eyebrow">Settings</p>
-          <h3>Local by default, with cleaner diagnostics when you need them.</h3>
-        </div>
-      </div>
-
       <form className="surface-panel" onSubmit={handleSubmit}>
         <div className="settings-stack">
           <section className="settings-section">

@@ -10,6 +10,26 @@
 
 This roadmap describes the staged implementation plan for Task Garden.
 
+## Current implementation status
+
+Task Garden has completed the original foundation through recap, sync-readiness, UI-polish, QA, and hosted-mode rehearsal work. The current checkpoint is a functional local-first personal beta with:
+
+- typed and voice capture
+- local whisper.cpp transcription
+- local Ollama extraction and optional recap narrative
+- review-before-confirm task persistence
+- task, project, recommendation, garden, recap, and sync foundations
+- SQLite local mode
+- optional Postgres-compatible hosted API scaffolding
+- repeatable backend, browser, migration, asset, and frontend validation
+
+The next release priorities are:
+
+1. freeze and publish a coherent personal-beta baseline
+2. add first-class local backup and restore before relying on the app daily
+3. replace the garden v1 renderer with the cohesive Garden V2 oasis direction
+4. defer real public hosting until local daily use and data recovery are proven
+
 The guiding strategy is:
 
 1. make the app useful early
@@ -231,12 +251,24 @@ Make the system stable, testable, and ready for future packaging.
 
 ---
 
-## Possible future phases
+## Current and future phases
 
-### Phase 10 — hosted single-user sync
-- Postgres backend
-- simple auth
-- multi-device sync
+### Phase 10 — hosted single-user foundation
+- Postgres-compatible backend configuration implemented
+- private single-user bearer-token boundary implemented
+- local Docker/Postgres migration and sync rehearsal implemented
+- real public deployment and multi-device acceptance testing remain deferred
+
+### Personal beta hardening
+- local SQLite backup and restore
+- launcher and microphone acceptance check
+- documentation and release checkpoint
+
+### Garden V2
+- one coherent scene camera and tile footprint
+- layered terrain, vegetation, centerpiece, and atmosphere
+- desert, recovering, healthy, and lush reference states
+- hover/focus interactions and reduced-motion fallback
 
 ### Phase 11 — richer garden systems
 - seasonal themes

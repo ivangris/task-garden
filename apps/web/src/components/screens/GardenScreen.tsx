@@ -23,17 +23,6 @@ export function GardenScreen({ overview, tilesPayload, onRecompute }: GardenScre
 
   return (
     <section className="workspace">
-      <div className="hero-card hero-card--compact">
-        <div>
-          <p className="section-eyebrow">Garden</p>
-          <h3>Your work turning into a quieter, greener place.</h3>
-        </div>
-        <div className="hero-card__stats">
-          <span className="stat-pill">{overview.state.stage_key.replace(/_/g, " ")}</span>
-          <span className="stat-pill">level {overview.state.current_level}</span>
-        </div>
-      </div>
-
       <section className="screen-grid screen-grid--garden">
         <section className="surface-panel surface-panel--wide">
           <div className="surface-panel__header">
@@ -44,6 +33,10 @@ export function GardenScreen({ overview, tilesPayload, onRecompute }: GardenScre
             <button className="secondary-button" type="button" onClick={() => void onRecompute()}>
               Recompute
             </button>
+          </div>
+          <div className="chip-row garden-state-strip">
+            <span className="stat-pill">{overview.state.stage_key.replace(/_/g, " ")}</span>
+            <span className="stat-pill">level {overview.state.current_level}</span>
           </div>
           <GardenRenderer overview={overview} tilesPayload={tilesPayload} />
         </section>

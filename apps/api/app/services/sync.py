@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.config import Settings
 from app.domain.entities import ChangeEvent, Device, GardenState, Project, RawEntry, SyncCursor, Task
@@ -149,10 +149,16 @@ def pull_changes(
     )
 
 
+def _comparable_datetime(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def _should_apply(incoming_changed_at: datetime, current_changed_at: datetime | None) -> bool:
     if current_changed_at is None:
         return True
-    return incoming_changed_at >= current_changed_at
+    return _comparable_datetime(incoming_changed_at) >= _comparable_datetime(current_changed_at)
 
 
 def _apply_task_change(change: PushChangeEventRequest, tasks: TaskRepository) -> bool:

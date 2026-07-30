@@ -35,7 +35,7 @@ Use this checklist before hosted deployment or packaging work. Keep the API in l
 ## First Launch
 
 1. Start the app from a clean local database.
-2. Confirm the sidebar only shows Capture, Inbox, Tasks, Projects, Garden, Recaps, and Settings.
+2. Confirm the top navigation only shows Capture, Inbox, Tasks, Projects, Garden, Recaps, and Settings.
 3. Confirm Settings loads without a permanent loading state.
 4. Confirm Garden loads without a permanent loading state.
 
@@ -52,14 +52,16 @@ Use this checklist before hosted deployment or packaging work. Keep the API in l
 2. Click the centered mic control.
 3. Confirm recording state and audio activity are visible.
 4. Stop recording with the same control.
-5. Transcribe the recording.
-6. Confirm the transcript is preserved and the audio preview is cleared after successful transcription.
-7. If transcription fails, confirm retry remains possible.
+5. Confirm transcription starts automatically.
+6. Confirm the transcript appears in the composer and remains editable.
+7. Confirm extraction starts automatically and task suggestions appear for review.
+8. Confirm the audio preview is cleared after successful transcription.
+9. If transcription fails, confirm retry remains possible and the temporary recording is not discarded first.
 
 ## Transcript Review And Extraction
 
-1. Save a typed note or transcribe audio.
-2. Run Extract Tasks.
+1. Save a typed note or finish a voice recording.
+2. Confirm typed notes run extraction on submit and voice transcripts run extraction automatically.
 3. Confirm suggested tasks appear in Review.
 4. Edit one candidate and reject one candidate if available.
 5. Confirm selected tasks.
@@ -102,7 +104,7 @@ Use this checklist before hosted deployment or packaging work. Keep the API in l
 
 1. Open Recaps.
 2. Generate weekly, monthly, and yearly recaps.
-3. Confirm metric cards, highlights, project themes, milestones, streaks, and garden summary render.
+3. Confirm compact metrics, highlights, streak values, and the optional reflection render.
 4. Confirm empty or low-activity recaps feel intentional, not broken.
 
 ## Settings And Sync Readiness
@@ -111,3 +113,23 @@ Use this checklist before hosted deployment or packaging work. Keep the API in l
 2. Confirm local-first defaults are visible.
 3. Register a device if needed.
 4. Confirm sync status remains optional and does not block normal use.
+
+## Hosted Mode Smoke
+
+1. Start Docker Desktop.
+2. Run:
+   ```powershell
+   powershell -NoProfile -ExecutionPolicy Bypass -File scripts\hosted-rehearsal.ps1 -Reset
+   ```
+3. Confirm the script reports `health: ok`, `unauthorized_write_status: 401`, and `pushed_change_count: 1`.
+4. Confirm CORS preflight from the hosted frontend origin:
+   ```powershell
+   curl.exe -i -X OPTIONS "http://127.0.0.1:18080/entries" -H "Origin: http://127.0.0.1:15174" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,authorization"
+   ```
+5. Confirm a hosted frontend build works with:
+   ```powershell
+   $env:VITE_API_BASE_URL="http://127.0.0.1:18080"
+   $env:VITE_API_AUTH_TOKEN="replace-with-a-long-random-token"
+   npm run build:web
+   ```
+6. Confirm local mode still works without hosted env vars after the compose stack is stopped.

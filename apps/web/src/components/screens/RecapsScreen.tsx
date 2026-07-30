@@ -1,6 +1,6 @@
 import { useMemo, useState, type JSX } from "react";
 
-import { metricJson, metricMap, metricNumber, metricText, stageChangeLabel } from "../../features/recaps/recap-utils";
+import { metricMap, metricNumber, metricText, stageChangeLabel } from "../../features/recaps/recap-utils";
 import { formatDate } from "../../features/tasks/task-utils";
 import type { RecapNarrative, RecapPeriod, RecapPeriodType } from "../../lib/types";
 
@@ -13,6 +13,70 @@ type RecapsScreenProps = {
 };
 
 const periodOrder: RecapPeriodType[] = ["weekly", "monthly", "yearly"];
+const hiddenHighlightTypes = new Set(["garden", "biggest_win"]);
+
+const recapIconByType: Record<string, JSX.Element> = {
+  active_days: (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M8 36h32" />
+      <path d="M14 36c0-10 4-18 10-24 6 6 10 14 10 24" />
+      <path d="M24 13v23" />
+      <path d="M17 24h14" />
+    </svg>
+  ),
+  top_project: (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M10 34h28" />
+      <path d="M14 34V18h20v16" />
+      <path d="M19 18c1-5 9-5 10 0" />
+      <path d="M18 25h12" />
+    </svg>
+  ),
+  streak: (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M16 38c-3-4-4-9-1-14 2-4 6-6 7-12 7 5 13 12 10 22" />
+      <path d="M24 39c-3-3-3-7 0-11 3 3 5 7 3 11" />
+    </svg>
+  ),
+  milestone: (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M12 35h24" />
+      <path d="M18 35V16h12v19" />
+      <path d="M18 16l6-6 6 6" />
+      <path d="M15 24h18" />
+    </svg>
+  ),
+  project_focus: (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M12 34h24" />
+      <path d="M16 34V18h16v16" />
+      <path d="M20 23h8" />
+      <path d="M20 28h8" />
+    </svg>
+  ),
+  default: (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M9 36h30" />
+      <path d="M15 36c0-9 4-16 9-21 5 5 9 12 9 21" />
+      <path d="M24 36V15" />
+    </svg>
+  ),
+};
+
+function recapIcon(type: string): JSX.Element {
+  return recapIconByType[type] ?? recapIconByType.default;
+}
+
+function highlightLabel(cardType: string): string {
+  const labels: Record<string, string> = {
+    active_days: "Active Days",
+    top_project: "Top Project",
+    streak: "Streak",
+    milestone: "Milestone",
+    project_focus: "Project",
+  };
+  return labels[cardType] ?? cardType.replace(/_/g, " ");
+}
 
 function narrativeStatusLabel(narrative: RecapNarrative | null | undefined): string {
   if (!narrative || narrative.generation_status === "not_generated") {
@@ -38,7 +102,6 @@ export function RecapsScreen({
   const recap = recaps[activePeriod] ?? null;
   const metrics = useMemo(() => metricMap(recap), [recap]);
   const heroCard = recap?.cards.find((card) => card.card_type === "hero") ?? null;
-  const topProjectNames = (metricJson(metrics, "top_projects").names as string[] | undefined) ?? [];
   const narrative = recap?.narrative ?? null;
 
   return (
@@ -67,19 +130,6 @@ export function RecapsScreen({
         </div>
       </div>
 
-      <section className="surface-panel recap-toolbar">
-        <div>
-          <p className="section-eyebrow">Current Period</p>
-          <h4>{recap?.period_label ?? `${activePeriod.replace(/^\w/, (value) => value.toUpperCase())} recap`}</h4>
-          <p className="muted-copy">
-            {recap ? `Updated ${formatDate(recap.generated_at)}` : "Generate a recap when you want a clean snapshot of progress."}
-          </p>
-        </div>
-        <button className="primary-button" type="button" onClick={() => void onGenerate(activePeriod)}>
-          {isLoading ? "Generating..." : `Refresh ${activePeriod}`}
-        </button>
-      </section>
-
       {!recap && !isLoading ? (
         <section className="surface-panel surface-panel--empty-state">
           <p className="section-eyebrow">Recap</p>
@@ -92,46 +142,58 @@ export function RecapsScreen({
         <>
           <section className="recap-metrics-grid">
             <article className="surface-panel recap-stat-card recap-stat-card--hero">
+              <span className="recap-icon">{recapIcon("active_days")}</span>
               <p className="section-eyebrow">Completed</p>
               <strong>{metricNumber(metrics, "total_tasks_completed") ?? 0}</strong>
-              <span>tasks finished</span>
             </article>
             <article className="surface-panel recap-stat-card">
-              <p className="section-eyebrow">Active Days</p>
-              <strong>{metricNumber(metrics, "active_days") ?? 0}</strong>
-              <span>days with momentum</span>
+              <span className="recap-icon">{recapIcon("streak")}</span>
+              <p className="section-eyebrow">Best Streak</p>
+              <strong>{recap.streak_summary?.period_best_streak_days ?? 0}</strong>
             </article>
             <article className="surface-panel recap-stat-card">
-              <p className="section-eyebrow">XP Gained</p>
+              <span className="recap-icon">{recapIcon("streak")}</span>
+              <p className="section-eyebrow">Longest</p>
+              <strong>{recap.streak_summary?.longest_streak_days ?? 0}</strong>
+            </article>
+            <article className="surface-panel recap-stat-card">
+              <span className="recap-icon">{recapIcon("streak")}</span>
+              <p className="section-eyebrow">Current</p>
+              <strong>{recap.streak_summary?.current_streak_days ?? 0}</strong>
+            </article>
+            <article className="surface-panel recap-stat-card">
+              <span className="recap-icon">{recapIcon("milestone")}</span>
+              <p className="section-eyebrow">XP</p>
               <strong>{metricNumber(metrics, "xp_gained") ?? 0}</strong>
-              <span>garden progress</span>
             </article>
             <article className="surface-panel recap-stat-card">
-              <p className="section-eyebrow">Garden Shift</p>
+              <span className="recap-icon">{recapIcon("default")}</span>
+              <p className="section-eyebrow">Garden</p>
               <strong>{`${metricNumber(metrics, "garden_health_delta") ?? 0 > -1 ? "+" : ""}${metricNumber(metrics, "garden_health_delta") ?? 0}`}</strong>
               <span>{stageChangeLabel(metricText(metrics, "garden_stage_change"))}</span>
             </article>
           </section>
 
-          <section className="screen-grid recap-screen-grid">
-            <section className="surface-panel surface-panel--wide">
+          <section className="recap-screen-grid">
+            <section className="surface-panel">
               <div className="surface-panel__header surface-panel__header--stack">
                 <div>
                   <p className="section-eyebrow">Highlights</p>
-                  <h4>Wins from this period</h4>
                 </div>
+                <button className="primary-button primary-button--small" type="button" onClick={() => void onGenerate(activePeriod)}>
+                  {isLoading ? "Refreshing..." : `Refresh ${activePeriod}`}
+                </button>
               </div>
               <div className="recap-card-grid">
                 {recap.cards
-                  .filter((card) => card.card_type !== "hero")
+                  .filter((card) => card.card_type !== "hero" && !hiddenHighlightTypes.has(card.card_type))
                   .map((card) => (
                     <article key={card.id} className={`recap-highlight-card recap-highlight-card--${card.visual_hint ?? "default"}`}>
-                      <p className="section-eyebrow">{card.card_type.replace(/_/g, " ")}</p>
-                      <h5>{card.title}</h5>
-                      {card.subtitle ? <strong>{card.subtitle}</strong> : null}
+                      <span className="recap-icon recap-icon--large">{recapIcon(card.card_type)}</span>
+                      <p className="section-eyebrow">{highlightLabel(card.card_type)}</p>
+                      {card.subtitle && card.card_type === "top_project" ? <strong>{card.subtitle}</strong> : null}
+                      {card.card_type === "milestone" ? <h5>{card.title}</h5> : null}
                       {card.primary_value ? <span className="recap-highlight-card__value">{card.primary_value}</span> : null}
-                      {card.secondary_value ? <span className="recap-highlight-card__secondary">{card.secondary_value}</span> : null}
-                      {card.supporting_text ? <p>{card.supporting_text}</p> : null}
                     </article>
                   ))}
               </div>
@@ -141,7 +203,6 @@ export function RecapsScreen({
               <div className="surface-panel__header">
                 <div>
                   <p className="section-eyebrow">Reflection</p>
-                  <h4>Optional recap narrative</h4>
                 </div>
                 <button className="secondary-button" type="button" onClick={() => void onGenerateNarrative(activePeriod)}>
                   {isGeneratingNarrative
@@ -177,92 +238,6 @@ export function RecapsScreen({
                     <p>Add a short readback when you want the recap to feel more reflective.</p>
                   </div>
                 ) : null}
-              </div>
-            </section>
-
-            <section className="surface-panel">
-              <div className="surface-panel__header surface-panel__header--stack">
-                <div>
-                  <p className="section-eyebrow">Project Themes</p>
-                  <h4>What kept moving</h4>
-                </div>
-              </div>
-              <div className="project-list">
-                {recap.project_summaries.slice(0, 3).map((item) => (
-                  <article key={item.id} className="project-card recap-project-card">
-                    <div>
-                      <strong>{item.project_name}</strong>
-                      <p>{item.completed_task_count} completed tasks</p>
-                    </div>
-                    <div className="chip-row">
-                      <span className="meta-chip">{item.xp_gained} XP</span>
-                      <span className="meta-chip">{Math.round(item.completion_share * 100)}%</span>
-                    </div>
-                  </article>
-                ))}
-                {recap.project_summaries.length === 0 ? <p className="empty-state">No project theme stood out yet.</p> : null}
-              </div>
-              {topProjectNames.length > 0 ? <p className="muted-copy">{`Top themes: ${topProjectNames.join(", ")}`}</p> : null}
-            </section>
-
-            <section className="surface-panel">
-              <div className="surface-panel__header surface-panel__header--stack">
-                <div>
-                  <p className="section-eyebrow">Garden Summary</p>
-                  <h4>Visible progress</h4>
-                </div>
-              </div>
-              <div className="recap-garden-summary">
-                <div className="chip-row">
-                  <span className="meta-chip">{`XP +${metricNumber(metrics, "xp_gained") ?? 0}`}</span>
-                  <span className="meta-chip">{`${metricNumber(metrics, "unlocks_earned") ?? 0} unlocks`}</span>
-                  <span className="meta-chip">{`${metricNumber(metrics, "overdue_recovered_count") ?? 0} recovered`}</span>
-                </div>
-                <p className="muted-copy">{stageChangeLabel(metricText(metrics, "garden_stage_change"))}</p>
-                <p className="muted-copy">{`Biggest win: ${metricText(metrics, "biggest_completed_task") ?? "Nothing completed yet."}`}</p>
-              </div>
-            </section>
-          </section>
-
-          <section className="screen-grid recap-screen-grid">
-            <section className="surface-panel">
-              <div className="surface-panel__header surface-panel__header--stack">
-                <div>
-                  <p className="section-eyebrow">Milestones</p>
-                  <h4>Moments worth remembering</h4>
-                </div>
-              </div>
-              <div className="recap-milestone-list">
-                {recap.milestones.map((item) => (
-                  <article key={item.id} className="recap-milestone-card">
-                    <strong>{item.title}</strong>
-                    <p>{item.description}</p>
-                  </article>
-                ))}
-                {recap.milestones.length === 0 ? <p className="empty-state">No milestone this time. The work still counts.</p> : null}
-              </div>
-            </section>
-
-            <section className="surface-panel">
-              <div className="surface-panel__header surface-panel__header--stack">
-                <div>
-                  <p className="section-eyebrow">Streaks</p>
-                  <h4>Consistency and comeback</h4>
-                </div>
-              </div>
-              <div className="recap-streak-block">
-                <div>
-                  <strong>{recap.streak_summary?.period_best_streak_days ?? 0}</strong>
-                  <span>best streak</span>
-                </div>
-                <div>
-                  <strong>{recap.streak_summary?.longest_streak_days ?? 0}</strong>
-                  <span>longest streak</span>
-                </div>
-                <div>
-                  <strong>{recap.streak_summary?.current_streak_days ?? 0}</strong>
-                  <span>current streak</span>
-                </div>
               </div>
             </section>
           </section>

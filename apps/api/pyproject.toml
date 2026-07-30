@@ -9,6 +9,7 @@ dependencies = [
   "httpx>=0.28.1",
   "python-multipart>=0.0.9",
   "pydantic-settings>=2.7.0",
+  "psycopg[binary]>=3.2.0",
   "sqlalchemy>=2.0.36",
   "uvicorn[standard]>=0.32.1"
 ]

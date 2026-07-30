@@ -1,0 +1,11 @@
+**/__pycache__/
+**/.pytest_cache/
+**/.venv/
+**/node_modules/
+**/dist/
+data/audio/
+data/sqlite/
+output/
+runtime-logs/
+.env
+.git/

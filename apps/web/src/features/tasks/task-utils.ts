@@ -3,7 +3,7 @@ import type { NavScreen, Project, Task } from "../../lib/types";
 export type TaskFilters = {
   status: string;
   projectId: string;
-  dateRange: "all_active" | "today" | "this_week" | "overdue" | "completed";
+  dateRange: "all_active" | "today" | "this_week";
 };
 
 export function formatDate(value: string | null): string {
@@ -117,8 +117,16 @@ export function tasksForScreen(screen: NavScreen, tasks: Task[]): Task[] {
 
 export function applyTaskFilters(tasks: Task[], filters: TaskFilters): Task[] {
   return tasks.filter((task) => {
-    if (filters.dateRange === "completed") {
+    if (filters.status === "completed") {
       if (task.status !== "completed") {
+        return false;
+      }
+    } else if (filters.status === "archived") {
+      if (task.status !== "archived") {
+        return false;
+      }
+    } else if (filters.status === "overdue") {
+      if (!isActiveTask(task) || !isOverdue(task.due_date)) {
         return false;
       }
     } else {
@@ -129,9 +137,6 @@ export function applyTaskFilters(tasks: Task[], filters: TaskFilters): Task[] {
         return false;
       }
       if (filters.dateRange === "this_week" && !isDueThisWeek(task.due_date)) {
-        return false;
-      }
-      if (filters.dateRange === "overdue" && !isOverdue(task.due_date)) {
         return false;
       }
       if (filters.status !== "all" && task.status !== filters.status) {

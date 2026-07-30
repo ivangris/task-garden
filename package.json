@@ -2,7 +2,7 @@
   "name": "task-garden",
   "private": true,
   "engines": {
-    "node": ">=22.22.0"
+    "node": ">=22.19.0"
   },
   "workspaces": [
     "apps/web",
@@ -16,6 +16,7 @@
     "check:garden-assets": "npm run check:garden-assets --workspace @task-garden/web",
     "qa:e2e": "npm run test:e2e --workspace @task-garden/web",
     "qa:e2e:headed": "npm run test:e2e:headed --workspace @task-garden/web",
-    "seed:demo": "cd apps/api && .\\.venv\\Scripts\\python.exe scripts\\seed_demo_data.py"
+    "seed:demo": "cd apps/api && .\\.venv\\Scripts\\python.exe scripts\\seed_demo_data.py",
+    "verify:baseline": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-release-baseline.ps1"
   }
 }

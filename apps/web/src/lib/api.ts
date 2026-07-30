@@ -28,11 +28,13 @@ import type {
 } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+const API_AUTH_TOKEN = import.meta.env.VITE_API_AUTH_TOKEN;
 let currentDeviceId: string | null = null;
 
 function withDeviceHeaders(headers: HeadersInit | undefined): HeadersInit {
   return {
     ...(headers ?? {}),
+    ...(API_AUTH_TOKEN ? { Authorization: `Bearer ${API_AUTH_TOKEN}` } : {}),
     ...(currentDeviceId ? { "X-Task-Garden-Device-Id": currentDeviceId } : {}),
   };
 }

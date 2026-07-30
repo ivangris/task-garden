@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Flower2, FolderKanban, Inbox, ListChecks, Mic2, Settings as SettingsIcon, Sprout, Trophy } from "lucide-react";
 
 import { CaptureScreen } from "../screens/CaptureScreen";
 import { GardenScreen } from "../screens/GardenScreen";
@@ -55,6 +56,28 @@ const taskScreenCopy: Record<Exclude<NavScreen, "capture" | "projects" | "garden
   inbox: { title: "Inbox", subtitle: "New tasks, quick adds, and completed work when you need it." },
   planning: { title: "Tasks", subtitle: "Filter active work by date, status, and project." },
 };
+
+function navIconFor(id: string): JSX.Element {
+  const iconProps = { "aria-hidden": true };
+  switch (id) {
+    case "capture":
+      return <Mic2 {...iconProps} />;
+    case "inbox":
+      return <Inbox {...iconProps} />;
+    case "planning":
+      return <ListChecks {...iconProps} />;
+    case "projects":
+      return <FolderKanban {...iconProps} />;
+    case "garden":
+      return <Sprout {...iconProps} />;
+    case "recaps":
+      return <Trophy {...iconProps} />;
+    case "settings":
+      return <SettingsIcon {...iconProps} />;
+    default:
+      return <Flower2 {...iconProps} />;
+  }
+}
 
 export function AppShell(): JSX.Element {
   const [activeItemId, setActiveItemId] = useState<NavScreen>("capture");
@@ -148,7 +171,6 @@ export function AppShell(): JSX.Element {
     return applyTaskFilters(scoped, filters);
   }, [activeItemId, filters, tasks]);
 
-  const activeItem = navItems.find((item) => item.id === activeItemId) ?? navItems[0];
   const countsByProject = useMemo(() => projectNameMap(projects), [projects]);
   const shellTone = shellToneForStage(gardenOverview?.state.stage_key);
 
@@ -257,7 +279,7 @@ export function AppShell(): JSX.Element {
     setFilters({
       status: created.status === "completed" ? "all" : created.status,
       projectId: created.project_id ?? "all",
-      dateRange: created.status === "completed" ? "completed" : "all_active",
+      dateRange: "all_active",
     });
     setActionNotice("Task added.");
   }
@@ -554,14 +576,8 @@ export function AppShell(): JSX.Element {
 
   return (
     <div className={`app-shell app-shell--${shellTone}`}>
-      <aside className="sidebar" aria-label="Primary">
-        <div className="sidebar__brand">
-          <p className="sidebar__eyebrow">Task Garden</p>
-          <h1>Calm capture, visible follow-through.</h1>
-          <p className="sidebar__copy">A local-first planning desk with a restorative layer, not a noisy pipeline.</p>
-        </div>
-
-        <nav className="sidebar__nav">
+      <header className="topbar" aria-label="Primary">
+        <nav className="topbar__nav">
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -570,30 +586,15 @@ export function AppShell(): JSX.Element {
               type="button"
             >
               <span className="nav-item__label-row">
-                <span className="nav-item__icon" aria-hidden="true">{item.icon}</span>
+                <span className="nav-item__icon">{navIconFor(item.id)}</span>
                 <span className="nav-item__label">{item.label}</span>
               </span>
-              <span className="nav-item__description">{item.description}</span>
             </button>
           ))}
         </nav>
-
-        <div className="sidebar__footer">
-          <div className="status-pill">{settings?.local_only_mode ? "Local-first" : "Hybrid mode"}</div>
-        </div>
-      </aside>
+      </header>
 
       <main className="content">
-        <header className="content__header">
-          <div>
-            <p className="content__eyebrow">Workspace</p>
-            <h2>{activeItem.label}</h2>
-          </div>
-          <button className="secondary-button secondary-button--ghost" type="button" onClick={() => void loadAll()}>
-            Refresh
-          </button>
-        </header>
-
         {errorMessage ? <div className="error-banner">{errorMessage}</div> : null}
         {actionNotice ? (
           <div className="info-banner info-banner--global">
