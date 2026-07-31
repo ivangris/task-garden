@@ -160,6 +160,11 @@ test("core local workflow smoke test", async ({ page, request }) => {
 
   await page.getByRole("button", { name: /^Garden/ }).click();
   await expect(page.locator(".garden-renderer")).toBeVisible();
+  await expect(page.locator(".garden-v2-tile")).toHaveCount(12);
+  const firstGardenTile = page.locator('[role="button"][aria-label^="West Patch tile 1,"]');
+  await expect(firstGardenTile).toHaveCount(1);
+  await firstGardenTile.click();
+  await expect(page.locator(".garden-inspector")).toContainText("West Patch");
 
   await page.getByRole("button", { name: /^Recaps/ }).click();
   await expect(page.getByText("Completed").first()).toBeVisible();

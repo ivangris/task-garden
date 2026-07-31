@@ -1,20 +1,20 @@
-import type { CSSProperties } from "react";
-
 import {
   decorationManifest,
   plantManifest,
   terrainManifest,
   type DecorationVisualKey,
-  type GardenAssetSprite,
   type PlantVisualKey,
 } from "./asset-manifest";
 import type { GardenOverview, GardenTile, GardenTilesPayload } from "../../lib/types";
 
-const TILE_WIDTH = 112;
-const TILE_HEIGHT = 112;
-const TILE_DEPTH = 22;
-const SCENE_PADDING_X = 56;
-const SCENE_PADDING_Y = 64;
+export const GARDEN_VIEWBOX_WIDTH = 1100;
+export const GARDEN_VIEWBOX_HEIGHT = 560;
+export const GARDEN_TILE_WIDTH = 170;
+export const GARDEN_TILE_HEIGHT = 88;
+export const GARDEN_TILE_DEPTH = 14;
+
+const GARDEN_ORIGIN_X = 270;
+const GARDEN_ORIGIN_Y = 150;
 
 type TileState = GardenTile["tile_state"];
 
@@ -32,18 +32,15 @@ export type GardenRenderableTile = {
   zIndex: number;
   terrainClassName: string;
   terrainLabel: string;
-  terrainAsset: GardenAssetSprite | null;
   plant: {
+    visualKey: PlantVisualKey;
     label: string;
-    icon: string;
     className: string;
-    asset: GardenAssetSprite | null;
   } | null;
   decoration: {
+    visualKey: DecorationVisualKey;
     label: string;
-    icon: string;
     className: string;
-    asset: GardenAssetSprite | null;
   } | null;
 };
 
@@ -64,16 +61,16 @@ export type GardenSceneModel = {
   overdueTaskCount: number;
   fountainState: "broken" | "restored";
   atmosphereKey: "desert" | "recovering" | "healthy" | "lush";
+  centerpieceX: number;
+  centerpieceY: number;
   tiles: GardenRenderableTile[];
   zoneLabels: GardenZoneLabel[];
 };
 
 function buildRenderPosition(coordX: number, coordY: number): Pick<GardenRenderableTile, "screenX" | "screenY" | "zIndex"> {
-  const screenX = SCENE_PADDING_X + coordX * 124 + (coordY % 2) * 54;
-  const screenY = SCENE_PADDING_Y + coordY * 88;
   return {
-    screenX,
-    screenY,
+    screenX: GARDEN_ORIGIN_X + (coordX - coordY) * (GARDEN_TILE_WIDTH / 2),
+    screenY: GARDEN_ORIGIN_Y + (coordX + coordY) * (GARDEN_TILE_HEIGHT / 2),
     zIndex: coordX + coordY,
   };
 }
@@ -104,12 +101,21 @@ function zoneLabelPosition(tiles: GardenRenderableTile[]): { left: number; top: 
     return { left: 0, top: 0 };
   }
 
-  const sorted = [...tiles].sort((a, b) => a.screenX - b.screenX);
-  const first = sorted[0];
-  const last = sorted[sorted.length - 1];
   return {
-    left: ((first.screenX + last.screenX) / 2) + 10,
-    top: Math.min(...tiles.map((tile) => tile.screenY)) - 30,
+    left: tiles.reduce((sum, tile) => sum + tile.screenX, 0) / tiles.length,
+    top: 82,
+  };
+}
+
+function centerpiecePosition(tiles: GardenRenderableTile[]): { x: number; y: number } {
+  const centerTiles = tiles.filter((tile) => tile.zoneKey === "fountain_court");
+  if (centerTiles.length === 0) {
+    return { x: 482, y: 280 };
+  }
+
+  return {
+    x: centerTiles.reduce((sum, tile) => sum + tile.screenX, 0) / centerTiles.length,
+    y: centerTiles.reduce((sum, tile) => sum + tile.screenY, 0) / centerTiles.length,
   };
 }
 
@@ -148,28 +154,26 @@ export function buildGardenSceneModel(
       zIndex: position.zIndex,
       terrainClassName: terrain.accentClass,
       terrainLabel: terrain.label,
-      terrainAsset: terrain.asset ?? null,
       plant: plantVisual
         ? {
+            visualKey: plantVisual,
             label: plantManifest[plantVisual].label,
-            icon: plantManifest[plantVisual].icon,
             className: plantManifest[plantVisual].className,
-            asset: plantManifest[plantVisual].asset ?? null,
           }
         : null,
       decoration: decorationVisual
         ? {
+            visualKey: decorationVisual,
             label: decorationManifest[decorationVisual].label,
-            icon: decorationManifest[decorationVisual].icon,
             className: decorationManifest[decorationVisual].className,
-            asset: decorationManifest[decorationVisual].asset ?? null,
           }
         : null,
     };
   });
 
+  const sortedTiles = tiles.sort((a, b) => a.zIndex - b.zIndex || a.tileIndex - b.tileIndex);
   const zoneLabels = tilesPayload.zones.map((zone) => {
-    const zoneTiles = tiles.filter((tile) => tile.zoneId === zone.id);
+    const zoneTiles = sortedTiles.filter((tile) => tile.zoneId === zone.id);
     const position = zoneLabelPosition(zoneTiles);
     return {
       id: zone.id,
@@ -179,28 +183,23 @@ export function buildGardenSceneModel(
       top: position.top,
     };
   });
-
-  const maxX = tiles.length === 0 ? 520 : Math.max(...tiles.map((tile) => tile.screenX)) + TILE_WIDTH + SCENE_PADDING_X;
-  const maxY = tiles.length === 0 ? 340 : Math.max(...tiles.map((tile) => tile.screenY)) + TILE_HEIGHT + TILE_DEPTH + SCENE_PADDING_Y;
-  const fountainState = tilesPayload.decorations.some((item) => item.decoration_key === "fountain_core") ? "restored" : "broken";
+  const centerpiece = centerpiecePosition(sortedTiles);
+  const fountainState = tilesPayload.decorations.some((item) => item.decoration_key === "fountain_core")
+    ? "restored"
+    : "broken";
 
   return {
-    width: maxX,
-    height: maxY,
+    width: GARDEN_VIEWBOX_WIDTH,
+    height: GARDEN_VIEWBOX_HEIGHT,
     stageKey: overview.state.stage_key,
     healthScore: overview.state.health_score,
     activeTaskCount: overview.state.active_task_count,
     overdueTaskCount: overview.state.overdue_task_count,
     fountainState,
     atmosphereKey: atmosphereForStage(overview.state.stage_key),
-    tiles: tiles.sort((a, b) => a.zIndex - b.zIndex || a.tileIndex - b.tileIndex),
+    centerpieceX: centerpiece.x,
+    centerpieceY: centerpiece.y,
+    tiles: sortedTiles,
     zoneLabels,
-  };
-}
-
-export function gardenSceneStyle(scene: GardenSceneModel): CSSProperties {
-  return {
-    width: `${scene.width}px`,
-    height: `${scene.height}px`,
   };
 }

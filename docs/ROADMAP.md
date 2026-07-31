@@ -27,7 +27,7 @@ The next release priorities are:
 
 1. freeze and publish a coherent personal-beta baseline
 2. add first-class local backup and restore before relying on the app daily
-3. replace the garden v1 renderer with the cohesive Garden V2 oasis direction
+3. validate the cohesive Garden V2 oasis renderer during daily use
 4. defer real public hosting until local daily use and data recovery are proven
 
 The guiding strategy is:
@@ -265,10 +265,10 @@ Make the system stable, testable, and ready for future packaging.
 - documentation and release checkpoint
 
 ### Garden V2
-- one coherent scene camera and tile footprint
-- layered terrain, vegetation, centerpiece, and atmosphere
-- desert, recovering, healthy, and lush reference states
-- hover/focus interactions and reduced-motion fallback
+- one coherent scene camera and tile footprint implemented
+- layered terrain, vegetation, centerpiece, and atmosphere implemented
+- desert, recovering, healthy, and lush reference states implemented
+- hover/focus interactions and reduced-motion fallback implemented
 
 ### Phase 11 — richer garden systems
 - seasonal themes

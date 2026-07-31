@@ -17,7 +17,7 @@ This checkpoint defines the first release state intended for regular single-user
 - task date, status, and project filters
 - project create, edit, and delete behavior
 - deterministic recommendations
-- deterministic garden state and v1 renderer
+- deterministic garden state and interactive Garden V2 renderer
 - weekly, monthly, and yearly recaps
 - optional local Ollama recap reflection
 - optional single-user hosted API foundation and sync contracts
@@ -61,7 +61,7 @@ npm run verify:baseline -- -Hosted
 
 ## Known Limitations
 
-- The garden v1 renderer is functional but visually inconsistent. Garden V2 is the next product-design milestone.
+- Garden V2 uses a cohesive vector scene; a final bespoke illustration pack remains optional rather than required for daily use.
 - Attachments are represented in the composer UI but are not yet persisted as source material.
 - Hosted mode is a private rehearsal foundation, not a public production deployment.
 - Sync uses single-user last-write-wins assumptions.
@@ -78,4 +78,4 @@ npm run verify:baseline -- -Hosted
 
 ## Next Checkpoint
 
-Begin Garden V2 from the approved oasis direction while preserving the existing garden API and deterministic domain rules.
+Run the personal daily-use acceptance pass, including launcher, microphone, provider readiness, and attachment handling decisions before desktop packaging.
