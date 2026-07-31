@@ -16,6 +16,8 @@ import type {
   CreateEntryInput,
   CreateProjectInput,
   CreateTaskInput,
+  DataBackup,
+  DataSafetyStatus,
   DeleteProjectMode,
   ExtractionBatch,
   GardenOverview,
@@ -27,6 +29,7 @@ import type {
   RawEntry,
   RecapPeriod,
   RecapPeriodType,
+  RestoreDataBackupResult,
   Settings,
   SyncStatus,
   Task,
@@ -85,6 +88,7 @@ export function AppShell(): JSX.Element {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [dataSafety, setDataSafety] = useState<DataSafetyStatus | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [providerChecks, setProviderChecks] = useState<Partial<Record<"task_extraction" | "recap_narrative" | "stt", ProviderCheckResult>>>({});
   const [localModels, setLocalModels] = useState<LocalModelsResult | null>(null);
@@ -108,12 +112,14 @@ export function AppShell(): JSX.Element {
     api.setDeviceId(storedDeviceId);
   }, []);
 
-  async function loadAll(): Promise<void> {
-    setIsLoading(true);
+  async function loadAll(showLoading = true): Promise<void> {
+    if (showLoading) {
+      setIsLoading(true);
+    }
     setErrorMessage(null);
     try {
       const storedDeviceId = window.localStorage.getItem(DEVICE_STORAGE_KEY) ?? undefined;
-      const [entryData, taskData, projectData, settingsData, syncStatusData, modelData, recommendationData, weeklyPreviewData, gardenStateData, gardenTilesData] = await Promise.all([
+      const [entryData, taskData, projectData, settingsData, syncStatusData, modelData, recommendationData, weeklyPreviewData, gardenStateData, gardenTilesData, dataSafetyData] = await Promise.all([
         api.listEntries(),
         api.listTasks(),
         api.listProjects(),
@@ -124,6 +130,7 @@ export function AppShell(): JSX.Element {
         api.createWeeklyPreview(),
         api.getGardenState(),
         api.getGardenTiles(),
+        api.getDataSafety(),
       ]);
       setEntries(entryData.items);
       setTasks(taskData.items);
@@ -135,10 +142,13 @@ export function AppShell(): JSX.Element {
       setWeeklyPreview(weeklyPreviewData);
       setGardenOverview(gardenStateData);
       setGardenTiles(gardenTilesData);
+      setDataSafety(dataSafetyData);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to load Task Garden.");
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   }
 
@@ -386,6 +396,20 @@ export function AppShell(): JSX.Element {
     setLocalModels(await api.listLocalModels());
   }
 
+  async function handleCreateDataBackup(): Promise<DataBackup> {
+    const backup = await api.createDataBackup();
+    setDataSafety(await api.getDataSafety());
+    setActionNotice("Local backup created.");
+    return backup;
+  }
+
+  async function handleRestoreDataBackup(backupName: string): Promise<RestoreDataBackupResult> {
+    const result = await api.restoreDataBackup(backupName);
+    await loadAll(false);
+    setActionNotice("Local data restored from backup.");
+    return result;
+  }
+
   async function handleRegisterDevice(): Promise<void> {
     const existingDeviceId = window.localStorage.getItem(DEVICE_STORAGE_KEY) ?? undefined;
     const device = await api.registerDevice({
@@ -533,6 +557,7 @@ export function AppShell(): JSX.Element {
         return (
           <SettingsScreen
             settings={settings}
+            dataSafety={dataSafety}
             syncStatus={syncStatus}
             providerChecks={providerChecks}
             localModels={localModels}
@@ -540,6 +565,8 @@ export function AppShell(): JSX.Element {
             onRegisterDevice={handleRegisterDevice}
             onCheckProvider={handleCheckProvider}
             onRefreshLocalModels={handleRefreshLocalModels}
+            onCreateDataBackup={handleCreateDataBackup}
+            onRestoreDataBackup={handleRestoreDataBackup}
           />
         );
       case "inbox":

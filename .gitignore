@@ -37,6 +37,7 @@ data/sqlite/*.db-shm
 data/sqlite/*.db-wal
 data/sqlite/*.sqlite-shm
 data/sqlite/*.sqlite-wal
+data/backups/
 runtime-logs/
 output/
 output/playwright/

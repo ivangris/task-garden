@@ -982,6 +982,58 @@ button {
   margin-top: 0.1rem;
 }
 
+.data-safety-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.data-safety-paths {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.data-safety-paths > div {
+  min-width: 0;
+  padding: 0.8rem 0.9rem;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.data-safety-paths span,
+.data-safety-paths code {
+  display: block;
+}
+
+.data-safety-paths span {
+  margin-bottom: 0.35rem;
+  color: var(--shell-text-muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.data-safety-paths code {
+  overflow: hidden;
+  color: var(--shell-text);
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-safety-restore {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.8rem;
+}
+
 .surface-panel--composer {
   padding: 1.25rem;
   background:
@@ -2099,6 +2151,11 @@ button {
   }
 
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .data-safety-paths,
+  .data-safety-restore {
     grid-template-columns: 1fr;
   }
 

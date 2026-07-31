@@ -47,3 +47,31 @@ Returns API health status.
 {
   "status": "ok"
 }
+```
+
+## Local data safety
+
+These routes are available only for a non-hosted, file-backed SQLite database. Backup files are constrained to `TASK_GARDEN_BACKUP_DIRECTORY`; restore requests cannot supply arbitrary filesystem paths.
+
+### `GET /data-safety`
+
+Returns backup readiness, the configured local database and backup locations, and available timestamped backups.
+
+### `POST /data-safety/backups`
+
+Creates a validated SQLite snapshot using SQLite's backup API.
+
+### `POST /data-safety/restore`
+
+Request:
+
+```json
+{
+  "backup_name": "task-garden-manual-20260730-120000-000000.db",
+  "confirmation": "RESTORE"
+}
+```
+
+Before restoring, the service creates a `pre_restore` safety backup of the current database. The selected backup and restored database must both pass `PRAGMA quick_check`.
+
+Hosted mode or a non-SQLite database returns `409`. Invalid, missing, or unsafe backup names return `422`.

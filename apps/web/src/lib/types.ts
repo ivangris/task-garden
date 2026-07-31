@@ -116,6 +116,32 @@ export type Settings = {
   stt_ready: boolean;
 };
 
+export type DataBackup = {
+  name: string;
+  backup_type: "manual" | "pre_restore";
+  size_bytes: number;
+  created_at: string;
+  alembic_revision: string | null;
+  integrity_status: "ok" | "invalid";
+};
+
+export type DataSafetyStatus = {
+  available: boolean;
+  database_kind: string;
+  database_exists: boolean;
+  database_path: string | null;
+  backup_directory: string | null;
+  reason: string | null;
+  backups: DataBackup[];
+};
+
+export type RestoreDataBackupResult = {
+  restored_from: DataBackup;
+  safety_backup: DataBackup;
+  restored_at: string;
+  message: string;
+};
+
 export type ProviderCheckResult = {
   kind: "task_extraction" | "recap_narrative" | "stt";
   provider_name: string;

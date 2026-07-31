@@ -5,6 +5,8 @@ import type {
   CreateEntryInput,
   CreateProjectInput,
   CreateTaskInput,
+  DataBackup,
+  DataSafetyStatus,
   DeleteProjectMode,
   DeleteProjectResult,
   ExtractionBatch,
@@ -18,6 +20,7 @@ import type {
   RecapNarrative,
   RecapPeriod,
   RegisteredDevice,
+  RestoreDataBackupResult,
   Settings,
   SyncStatus,
   Task,
@@ -117,6 +120,13 @@ export const api = {
   checkProvider: (kind: "task_extraction" | "recap_narrative" | "stt") =>
     request<ProviderCheckResult>("/settings/providers/check", { method: "POST", body: JSON.stringify({ kind }) }),
   listLocalModels: () => request<LocalModelsResult>("/settings/local-models"),
+  getDataSafety: () => request<DataSafetyStatus>("/data-safety"),
+  createDataBackup: () => request<DataBackup>("/data-safety/backups", { method: "POST" }),
+  restoreDataBackup: (backupName: string) =>
+    request<RestoreDataBackupResult>("/data-safety/restore", {
+      method: "POST",
+      body: JSON.stringify({ backup_name: backupName, confirmation: "RESTORE" }),
+    }),
   getSyncStatus: (deviceId?: string) =>
     request<SyncStatus>(deviceId ? `/sync?device_id=${encodeURIComponent(deviceId)}` : "/sync"),
   registerDevice: (payload: { device_id?: string; device_name: string; platform: string; app_version?: string }) =>

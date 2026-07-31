@@ -1,9 +1,18 @@
 import { useEffect, useState, type FormEvent } from "react";
 
-import type { LocalModelsResult, ProviderCheckResult, Settings, SyncStatus } from "../../lib/types";
+import type {
+  DataBackup,
+  DataSafetyStatus,
+  LocalModelsResult,
+  ProviderCheckResult,
+  RestoreDataBackupResult,
+  Settings,
+  SyncStatus,
+} from "../../lib/types";
 
 type SettingsScreenProps = {
   settings: Settings | null;
+  dataSafety: DataSafetyStatus | null;
   syncStatus: SyncStatus | null;
   providerChecks: Partial<Record<"task_extraction" | "recap_narrative" | "stt", ProviderCheckResult>>;
   localModels: LocalModelsResult | null;
@@ -11,6 +20,8 @@ type SettingsScreenProps = {
   onRegisterDevice: () => Promise<void>;
   onCheckProvider: (kind: "task_extraction" | "recap_narrative" | "stt") => Promise<void>;
   onRefreshLocalModels: () => Promise<void>;
+  onCreateDataBackup: () => Promise<DataBackup>;
+  onRestoreDataBackup: (backupName: string) => Promise<RestoreDataBackupResult>;
 };
 
 function providerCheckLabel(result: ProviderCheckResult | undefined): string {
@@ -20,8 +31,16 @@ function providerCheckLabel(result: ProviderCheckResult | undefined): string {
   return result.ok ? "Ready" : "Needs attention";
 }
 
+function formatBackupSize(sizeBytes: number): string {
+  if (sizeBytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
+  }
+  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function SettingsScreen({
   settings,
+  dataSafety,
   syncStatus,
   providerChecks,
   localModels,
@@ -29,12 +48,23 @@ export function SettingsScreen({
   onRegisterDevice,
   onCheckProvider,
   onRefreshLocalModels,
+  onCreateDataBackup,
+  onRestoreDataBackup,
 }: SettingsScreenProps): JSX.Element {
   const [draft, setDraft] = useState<Settings | null>(settings);
+  const [selectedBackupName, setSelectedBackupName] = useState("");
+  const [dataSafetyMessage, setDataSafetyMessage] = useState<string | null>(null);
+  const [isDataSafetyBusy, setIsDataSafetyBusy] = useState(false);
 
   useEffect(() => {
     setDraft(settings);
   }, [settings]);
+
+  useEffect(() => {
+    if (!dataSafety?.backups.some((backup) => backup.name === selectedBackupName)) {
+      setSelectedBackupName(dataSafety?.backups[0]?.name ?? "");
+    }
+  }, [dataSafety, selectedBackupName]);
 
   if (!settings || !draft) {
     return (
@@ -56,6 +86,45 @@ export function SettingsScreen({
       return;
     }
     await onSave(draft);
+  }
+
+  async function handleCreateBackup(): Promise<void> {
+    setIsDataSafetyBusy(true);
+    setDataSafetyMessage(null);
+    try {
+      const backup = await onCreateDataBackup();
+      setSelectedBackupName(backup.name);
+      setDataSafetyMessage(`Backup created ${new Date(backup.created_at).toLocaleString()}.`);
+    } catch (error) {
+      setDataSafetyMessage(error instanceof Error ? error.message : "Unable to create backup.");
+    } finally {
+      setIsDataSafetyBusy(false);
+    }
+  }
+
+  async function handleRestoreBackup(): Promise<void> {
+    if (!selectedBackupName) {
+      return;
+    }
+    const confirmed = window.confirm(
+      "Restore this backup? Task Garden will create a safety backup of the current database before replacing it.",
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDataSafetyBusy(true);
+    setDataSafetyMessage(null);
+    try {
+      const result = await onRestoreDataBackup(selectedBackupName);
+      setDataSafetyMessage(
+        `Restored ${new Date(result.restored_from.created_at).toLocaleString()}. A pre-restore safety backup was kept.`,
+      );
+    } catch (error) {
+      setDataSafetyMessage(error instanceof Error ? error.message : "Unable to restore backup.");
+    } finally {
+      setIsDataSafetyBusy(false);
+    }
   }
 
   return (
@@ -88,6 +157,76 @@ export function SettingsScreen({
                 />
               </label>
             </div>
+          </section>
+
+          <section className="settings-section">
+            <div className="surface-panel__header surface-panel__header--stack">
+              <div>
+                <p className="section-eyebrow">Data safety</p>
+                <h4>Local backups</h4>
+              </div>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => void handleCreateBackup()}
+                disabled={isDataSafetyBusy || !dataSafety?.available || !dataSafety.database_exists}
+              >
+                {isDataSafetyBusy ? "Working..." : "Create backup"}
+              </button>
+            </div>
+
+            {dataSafetyMessage ? <div className="info-banner">{dataSafetyMessage}</div> : null}
+
+            {!dataSafety ? (
+              <p className="muted-copy">Checking local backup readiness.</p>
+            ) : !dataSafety.available ? (
+              <p className="muted-copy">{dataSafety.reason ?? "Local backups are unavailable for this database."}</p>
+            ) : (
+              <div className="data-safety-panel">
+                <div className="data-safety-paths">
+                  <div>
+                    <span>Local database</span>
+                    <code>{dataSafety.database_path}</code>
+                  </div>
+                  <div>
+                    <span>Backup folder</span>
+                    <code>{dataSafety.backup_directory}</code>
+                  </div>
+                </div>
+
+                <div className="data-safety-restore">
+                  <label className="field">
+                    <span>Available backups</span>
+                    <select
+                      value={selectedBackupName}
+                      onChange={(event) => setSelectedBackupName(event.target.value)}
+                      disabled={dataSafety.backups.length === 0 || isDataSafetyBusy}
+                    >
+                      {dataSafety.backups.length === 0 ? <option value="">No backups yet</option> : null}
+                      {dataSafety.backups.map((backup) => (
+                        <option key={backup.name} value={backup.name} disabled={backup.integrity_status !== "ok"}>
+                          {new Date(backup.created_at).toLocaleString()} · {formatBackupSize(backup.size_bytes)}
+                          {backup.backup_type === "pre_restore" ? " · safety" : ""}
+                          {backup.integrity_status !== "ok" ? " · invalid" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    className="secondary-button danger-button"
+                    type="button"
+                    onClick={() => void handleRestoreBackup()}
+                    disabled={!selectedBackupName || isDataSafetyBusy}
+                  >
+                    Restore selected
+                  </button>
+                </div>
+
+                <p className="helper-text">
+                  Restoring always preserves the current database as a safety backup first. Copy important backups to another drive as well.
+                </p>
+              </div>
+            )}
           </section>
 
           <section className="settings-section">

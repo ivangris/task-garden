@@ -21,6 +21,7 @@ This checkpoint defines the first release state intended for regular single-user
 - weekly, monthly, and yearly recaps
 - optional local Ollama recap reflection
 - optional single-user hosted API foundation and sync contracts
+- timestamped local SQLite backup and validated restore
 
 ## Validated Local Runtime
 
@@ -61,19 +62,20 @@ npm run verify:baseline -- -Hosted
 ## Known Limitations
 
 - The garden v1 renderer is functional but visually inconsistent. Garden V2 is the next product-design milestone.
-- There is no first-class local backup and restore command yet. Do not rely on a single unprotected SQLite database for important personal history.
 - Attachments are represented in the composer UI but are not yet persisted as source material.
 - Hosted mode is a private rehearsal foundation, not a public production deployment.
 - Sync uses single-user last-write-wins assumptions.
 - Desktop packaging and mobile clients are not implemented.
 
-## Data Safety Until Backup Exists
+## Data Safety
 
-- Keep `data/sqlite/task-garden.db` out of version control.
-- Stop the API before manually copying the database.
-- Store any manual copy outside the repository and outside the same physical disk when possible.
+- Create local backups from Settings before important changes.
+- Restore accepts only backups from the configured backup directory and creates a pre-restore safety backup first.
+- Set `TASK_GARDEN_BACKUP_DIRECTORY` to another drive for stronger protection.
+- Keep both the active database and backup directory out of version control.
 - Never run demo reset commands against the normal personal database.
+- Run `npm run verify:data-safety` to rehearse backup and restore against temporary data.
 
 ## Next Checkpoint
 
-Implement explicit local SQLite backup and restore with safe destination validation, timestamped backups, and a documented recovery test. Garden V2 implementation should begin only after that data-safety checkpoint is validated.
+Begin Garden V2 from the approved oasis direction while preserving the existing garden API and deterministic domain rules.

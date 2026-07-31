@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.config import get_settings
 
 
-def _resolve_sqlite_url(database_url: str) -> str:
+def resolve_database_url(database_url: str) -> str:
     if not database_url.startswith("sqlite:///"):
         return database_url
 
@@ -24,9 +24,20 @@ def _resolve_sqlite_url(database_url: str) -> str:
     return f"sqlite:///{resolved.as_posix()}"
 
 
+def sqlite_database_path(database_url: str) -> Path | None:
+    resolved_url = resolve_database_url(database_url)
+    if not resolved_url.startswith("sqlite:///"):
+        return None
+
+    database_path = resolved_url.removeprefix("sqlite:///")
+    if database_path == ":memory:":
+        return None
+    return Path(database_path).resolve()
+
+
 @lru_cache(maxsize=1)
 def get_engine() -> Engine:
-    return create_engine(_resolve_sqlite_url(get_settings().database_url), future=True)
+    return create_engine(resolve_database_url(get_settings().database_url), future=True)
 
 
 @lru_cache(maxsize=1)

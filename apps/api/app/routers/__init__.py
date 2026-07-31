@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.routers import (
     entries,
+    data_safety,
     entry_extractions,
     extractions,
     garden,
@@ -17,6 +18,7 @@ from app.routers import (
 
 router = APIRouter()
 router.include_router(health.router, tags=["health"])
+router.include_router(data_safety.router, prefix="/data-safety", tags=["data-safety"])
 router.include_router(settings.router, prefix="/settings", tags=["settings"])
 router.include_router(entries.router, prefix="/entries", tags=["entries"])
 router.include_router(entry_extractions.router, prefix="/entries", tags=["entries"])

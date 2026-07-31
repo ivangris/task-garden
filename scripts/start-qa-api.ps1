@@ -4,6 +4,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $apiRoot = Join-Path $repoRoot "apps\api"
 $dataDir = Join-Path $repoRoot "data\sqlite"
 $dbPath = Join-Path $dataDir "task-garden-qa.db"
+$backupDir = Join-Path $repoRoot "data\backups\qa"
 $venvPython = Join-Path $apiRoot ".venv\Scripts\python.exe"
 $port = if ($env:TASK_GARDEN_QA_API_PORT) { $env:TASK_GARDEN_QA_API_PORT } else { "18000" }
 
@@ -17,8 +18,14 @@ if ($env:TASK_GARDEN_QA_RESET_DB -ne "0" -and (Test-Path $dbPath)) {
   Remove-Item -LiteralPath $dbPath -Force
 }
 
+if ($env:TASK_GARDEN_QA_RESET_DB -ne "0" -and (Test-Path $backupDir)) {
+  Remove-Item -LiteralPath $backupDir -Recurse -Force
+}
+New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
+
 $dbUrlPath = $dbPath.Replace("\", "/")
 $env:TASK_GARDEN_DATABASE_URL = "sqlite:///$dbUrlPath"
+$env:TASK_GARDEN_BACKUP_DIRECTORY = $backupDir.Replace("\", "/")
 $env:TASK_GARDEN_TASK_EXTRACTION_PROVIDER = "mock"
 $env:TASK_GARDEN_RECAP_NARRATIVE_PROVIDER = "mock"
 $env:TASK_GARDEN_STT_PROVIDER = "local_stub"

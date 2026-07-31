@@ -16,6 +16,7 @@ def _resolve_base_dir() -> Path:
 BASE_DIR = _resolve_base_dir()
 DEFAULT_SQLITE_URL = f"sqlite:///{(BASE_DIR / 'data' / 'sqlite' / 'task-garden.db').as_posix()}"
 DEFAULT_AUDIO_DIR = str((BASE_DIR / "data" / "audio").resolve())
+DEFAULT_BACKUP_DIR = str((BASE_DIR / "data" / "backups").resolve())
 DEFAULT_CORS_ORIGINS = "http://127.0.0.1:5173,http://127.0.0.1:15173,http://localhost:5173,http://localhost:15173"
 
 
@@ -57,6 +58,7 @@ class Settings(BaseSettings):
     sync_base_url: str | None = None
     cloud_api_key: str | None = None
     audio_storage_dir: str = DEFAULT_AUDIO_DIR
+    backup_directory: str = DEFAULT_BACKUP_DIR
     stt_executable_path: str | None = None
     stt_model_path: str | None = None
 

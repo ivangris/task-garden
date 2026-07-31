@@ -260,7 +260,7 @@ Make the system stable, testable, and ready for future packaging.
 - real public deployment and multi-device acceptance testing remain deferred
 
 ### Personal beta hardening
-- local SQLite backup and restore
+- local SQLite backup and validated restore implemented
 - launcher and microphone acceptance check
 - documentation and release checkpoint
 

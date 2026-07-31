@@ -188,6 +188,24 @@ The script prints the database URL to use when starting the API. It creates tran
 
 Manual QA steps live in [docs/QA_CHECKLIST.md](./docs/QA_CHECKLIST.md).
 
+### Local backup and restore
+
+Open Settings, then use **Local backups** to create or restore a timestamped SQLite snapshot. Restoring a snapshot first creates a pre-restore safety backup of the current database.
+
+The default backup folder is `data/backups`, which is ignored by Git. To keep backups on another drive, set:
+
+```bash
+TASK_GARDEN_BACKUP_DIRECTORY=D:\TaskGardenBackups
+```
+
+Run the focused recovery tests with:
+
+```bash
+npm run verify:data-safety
+```
+
+Task Garden backup endpoints accept backup names only, never arbitrary restore paths. Local backup and restore is disabled in hosted/Postgres mode.
+
 ## Optional hosted single-user mode
 
 Task Garden remains local-first by default. The private hosted API foundation supports future multi-device sync, but it is not required for normal local use.

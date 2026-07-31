@@ -4,6 +4,7 @@
 **/node_modules/
 **/dist/
 data/audio/
+data/backups/
 data/sqlite/
 output/
 runtime-logs/

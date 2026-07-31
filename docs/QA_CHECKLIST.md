@@ -114,6 +114,22 @@ Use this checklist before hosted deployment or packaging work. Keep the API in l
 3. Register a device if needed.
 4. Confirm sync status remains optional and does not block normal use.
 
+## Local Backup And Restore
+
+1. Open Settings and confirm Local backups shows the current SQLite database and backup folder.
+2. Create a task with a distinctive title.
+3. Select **Create backup** and confirm a dated backup appears.
+4. Change or delete the distinctive task.
+5. Select the dated backup and choose **Restore selected**.
+6. Confirm the restore warning explains that a safety backup will be created.
+7. Confirm the original task state returns after restore.
+8. Confirm a new safety backup appears in the list.
+9. Run:
+   ```powershell
+   npm run verify:data-safety
+   ```
+10. Copy an important backup to another drive and verify the copied file exists before relying on the app for personal history.
+
 ## Hosted Mode Smoke
 
 1. Start Docker Desktop.

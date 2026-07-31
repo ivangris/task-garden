@@ -21,6 +21,7 @@ const names = {
   betaTask: `Beta project task ${runId}`,
   keepTask: `Keep task ${runId}`,
   deleteTask: `Delete task ${runId}`,
+  backupMarkerTask: `Backup marker ${runId}`,
 };
 
 type ProjectPayload = {
@@ -168,4 +169,17 @@ test("core local workflow smoke test", async ({ page, request }) => {
   await page.getByRole("button", { name: /^Settings/ }).click();
   await expect(page.getByLabel("Extraction provider")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Sync readiness" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Local backups" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Create backup" }).click();
+  await expect(page.getByText(/Backup created/)).toBeVisible();
+  const selectedBackupName = await page.getByLabel("Available backups").inputValue();
+  expect(selectedBackupName).toMatch(/^task-garden-manual-.*\.db$/);
+
+  const backupMarker = await createTask(request, names.backupMarkerTask);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Restore selected" }).click();
+  await expect(page.getByText(/pre-restore safety backup was kept/)).toBeVisible();
+  const tasksAfterRestore = await (await request.get(`${apiBaseUrl}/tasks`)).json();
+  expect(tasksAfterRestore.items.some((task: { id: string }) => task.id === backupMarker.id)).toBe(false);
 });
